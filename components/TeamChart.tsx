@@ -47,7 +47,7 @@ export default function TeamChart({ data, type, isDark = false }: { data: any[],
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
-        <XAxis dataKey="team" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#6366f1' : '#a1a1aa', fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }} dy={10} />
+        <XAxis dataKey="team" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#6366f1' : '#a1a1aa', fontSize: 12, fontWeight: 900 }} dy={10} />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#ffffff', opacity: 0.05 }} />
         <Bar dataKey="total_points" radius={[12, 12, 0, 0]} maxBarSize={60}>
           {data.map((entry, index) => (
