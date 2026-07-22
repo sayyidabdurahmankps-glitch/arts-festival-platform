@@ -1,0 +1,27 @@
+useEffect(() => {
+  fetchStats();
+
+  // ⚡ We listen to the PHYSICAL 'results' table...
+  const resultsChannel = supabase.channel('comparison-results-sync')
+    .on('postgres_changes', { 
+       event: '*', 
+       schema: 'public', 
+       table: 'results', // Listening to the real table
+       filter: 'status=eq.approved' 
+    }, fetchStats) // ...but we call fetchStats which pulls from the VIEW!
+    .subscribe();
+
+  // ⚡ We listen to the PHYSICAL 'teams' table (for bonus/penalty)...
+  const teamsChannel = supabase.channel('comparison-teams-sync')
+    .on('postgres_changes', { 
+       event: '*', 
+       schema: 'public', 
+       table: 'teams' // Listening to the real table
+    }, fetchStats)
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(resultsChannel);
+    supabase.removeChannel(teamsChannel);
+  };
+}, []);
