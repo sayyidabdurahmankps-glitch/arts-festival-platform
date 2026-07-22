@@ -132,7 +132,7 @@ export default function Home() {
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 drop-shadow-sm">
               <TypeAnimation
                 sequence={[
-                  "EXCELLENCE.",
+                  "SYNERGY.",
                   1500,
                   "ARTISTRY.",
                   1500,
