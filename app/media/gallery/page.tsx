@@ -28,7 +28,7 @@ export default function GalleryPage() {
         .from("media-gallery")
         .list("", {
           limit: 100,
-          order: { column: "created_at", ascending: false },
+          sortBy: { column: "created_at", order: "desc" },
         });
 
       if (error) throw error;
