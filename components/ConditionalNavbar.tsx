@@ -194,7 +194,7 @@ export default function Navbar() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
                 </span>
-                <span className="font-black uppercase tracking-widest text-sm">
+                <span className="font-black uppercase tracking-widest am:hidden text-sm">
                   Enter Live Feed
                 </span>
               </Link>
