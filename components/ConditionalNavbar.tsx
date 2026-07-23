@@ -134,7 +134,7 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-[#050505]/95 backdrop-blur-3xl md:hidden flex flex-col pt-24 px-6 pb-safe"
           >
             {/* Animated Links Container */}
-            <div className="flex-1 flex flex-col gap-2 overflow-y-auto hide-scrollbar pb-10">
+            <div className="flex-1 flex flex-col gap-2 overflow-y-auto hide-scrollbar pb-20">
               {navLinks.map((link, i) => {
                 const isActive = pathname === link.href;
                 return (
@@ -178,6 +178,27 @@ export default function Navbar() {
                 );
               })}
             </div>
+
+            {/* Bottom Pinned Live Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mt-auto pt-4 pb-8 border-t border-white/10"
+            >
+              <Link
+                href="/live"
+                className="flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:bg-indigo-500 transition-all active:scale-95"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                </span>
+                <span className="font-black uppercase tracking-widest text-sm">
+                  Enter Live Feed
+                </span>
+              </Link>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
