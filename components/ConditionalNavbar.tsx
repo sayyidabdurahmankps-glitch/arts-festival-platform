@@ -188,7 +188,7 @@ export default function Navbar() {
             >
               <Link
                 href="/live"
-                className="flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:bg-indigo-500 transition-all active:scale-95"
+                className="max-sm:hidden flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:bg-indigo-500 transition-all active:scale-95"
               >
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
