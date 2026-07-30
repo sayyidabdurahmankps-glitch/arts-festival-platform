@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, RefObject } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Terminal,
@@ -38,25 +38,19 @@ const SystemActions = {
   },
 
   fetchActiveNodes: async () => {
-    console.log("📡 Attempting to fetch profiles...");
-
     const response = await supabase
       .from("profiles")
       .select("id, role, last_active")
       .eq("role", "judge")
       .limit(10);
 
-    // THIS WILL TELL US EXACTLY WHAT IS WRONG:
     if (response.error) {
       console.error(
         "❌ SUPABASE ERROR:",
         response.error.message,
         response.error.details,
       );
-    } else {
-      console.log("✅ SUPABASE DATA RETURNED:", response.data);
     }
-
     return response;
   },
 };
@@ -71,7 +65,6 @@ function useSystemCore() {
   const [togglingAuth, setTogglingAuth] = useState(false);
   const [activeSessions, setActiveSessions] = useState<any[]>([]);
 
-  // ⚡ FIXED: Added | null to satisfy strict TypeScript
   const terminalEndRef = useRef<HTMLDivElement | null>(null);
 
   const addLog = (message: string) => {
@@ -88,9 +81,10 @@ function useSystemCore() {
   useEffect(() => {
     addLog("[SYS] FestOS Mainframe Initialized.");
 
+    // ⚡ FIXED: Querying the correct "system_settings" table
     const fetchInitialAuth = async () => {
       const { data } = await supabase
-        .from("profiles")
+        .from("system_settings")
         .select("judge_logins_active")
         .eq("id", 1)
         .single();
@@ -151,13 +145,13 @@ function useSystemCore() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll Terminal
-  useEffect(
-    () => terminalEndRef.current?.scrollIntoView({ behavior: "smooth" }),
-    [logs],
-  );
+  // ⚡ FIXED: Added curly braces so React doesn't misinterpret the return value as a cleanup function!
+  useEffect(() => {
+    if (terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs]);
 
-  // ⚡ FUNCTIONALIZED ACTION: Toggle Gateway
   const handleToggleGateway = async () => {
     setTogglingAuth(true);
     const { error } = await SystemActions.toggleGateway(loginsActive);
@@ -172,7 +166,6 @@ function useSystemCore() {
     setTogglingAuth(false);
   };
 
-  // ⚡ FUNCTIONALIZED ACTION: Force Logout
   const handleForceLogout = async (judgeId: string, username: string) => {
     addLog(`[SECURITY] Initiating forced session termination for: ${username}`);
     const { error } = await SystemActions.killSession(judgeId);
@@ -366,7 +359,6 @@ function Analytics() {
   );
 }
 
-// ⚡ FIXED: Added | null to the terminalEndRef prop definition here
 function TerminalWindow({
   logs,
   dbLatency,
@@ -376,7 +368,7 @@ function TerminalWindow({
   logs: string[];
   dbLatency: number;
   onClear: () => void;
-  terminalEndRef: React.RefObject<HTMLDivElement | null>;
+  terminalEndRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div className="bg-black border border-white/10 p-1 rounded-[3rem] flex flex-col h-[500px] xl:h-full shadow-2xl relative group">
@@ -473,7 +465,6 @@ function ActiveSessionsPanel({
         `CRITICAL ACTION: Are you sure you want to forcibly terminate the session for Node ${id.slice(0, 8)}?`,
       )
     ) {
-      // Pass the sliced ID as the "username" so the terminal logger still has something to print
       onForceLogout(id, `Node-${id.slice(0, 5)}`);
     }
   };
@@ -525,7 +516,6 @@ function ActiveSessionsPanel({
                   {session.node_id || "N-X"}
                 </td>
 
-                {/* ⚡ Render the ID since we don't have a username */}
                 <td className="py-4 px-6 text-sm text-zinc-300 font-mono tracking-wide">
                   {session.id.slice(0, 18)}...
                 </td>
