@@ -184,7 +184,7 @@ export default function Navbar() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="mt-auto pt-4 pb-8 border-t border-white/10"
+              className="max-sm:hidden mt-auto pt-4 pb-8 border-t border-white/10"
             >
               <Link
                 href="/live"
