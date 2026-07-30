@@ -1,21 +1,26 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Medal, Award, Loader2 } from "lucide-react";
+import { Trophy, Medal, Award, Loader2, Crown } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ==========================================
-// 1. TYPES
+// 1. TYPES (Matched to team_leaderboard View)
 // ==========================================
 type TeamScore = {
-  id: string; // Ensure id is required for keys
-  team: string; // The view outputs 'team'
-  name?: string; // Fallback
-  total_points: number;
+  id: string;
+  team?: string;           // Supports view outputting 'team'
+  name?: string;           // Supports view outputting 'name'
+  total_points: number;    // Calculated by team_leaderboard (includes bonus & penalty)
   color: string;
   category_name?: string;
   category_group?: string;
+};
+
+type RankedTeamScore = TeamScore & {
+  rank: number;
+  isTie: boolean;
 };
 
 // ==========================================
@@ -27,7 +32,7 @@ function useLiveLeaderboardData(categoryFilter?: string) {
 
   const fetchLeaderboard = async () => {
     try {
-      // ⚡ Fetch directly from the view
+      // ⚡ Target team_leaderboard so bonus/penalty points are included
       let query = supabase
         .from("team_leaderboard")
         .select("*")
@@ -40,10 +45,8 @@ function useLiveLeaderboardData(categoryFilter?: string) {
       const { data: dbData, error } = await query;
 
       if (error) {
-        console.error("Leaderboard Fetch Error:", error);
+        console.error("Leaderboard Fetch Error:", error.message);
       } else if (dbData) {
-        // Log the data to verify it's arriving
-        console.log("Fetched Leaderboard Data:", dbData);
         setData(dbData as TeamScore[]);
       }
     } catch (err) {
@@ -56,7 +59,7 @@ function useLiveLeaderboardData(categoryFilter?: string) {
   useEffect(() => {
     fetchLeaderboard();
 
-    // ⚡ Listen to the underlying tables that feed the view
+    // ⚡ Listen to both results and teams tables for instant bonus/penalty updates
     const resultsChannel = supabase
       .channel(`table-results-sync-${categoryFilter || "all"}`)
       .on(
@@ -104,11 +107,12 @@ export default function LeaderboardTable({
   );
   const activeData = providedData || liveData;
 
-  // ⚡ DENSE RANKING ENGINE (Handles Ties)
-  const rankedData = useMemo(() => {
+  // ==========================================
+  // ⚡ DENSE RANKING ENGINE (Matches Leaderboard Page)
+  // ==========================================
+  const rankedData: RankedTeamScore[] = useMemo(() => {
     if (!activeData || activeData.length === 0) return [];
 
-    // Sort descending
     const sorted = [...activeData].sort(
       (a, b) => (b.total_points || 0) - (a.total_points || 0),
     );
@@ -121,10 +125,9 @@ export default function LeaderboardTable({
         currentRank++;
       }
       prevPoints = team.total_points;
-      return { ...team, rank: currentRank };
+      return { ...team, rank: currentRank, isTie: false };
     });
 
-    // Determine if a rank is shared
     const rankCounts = ranked.reduce(
       (acc, t) => {
         acc[t.rank] = (acc[t.rank] || 0) + 1;
@@ -179,11 +182,11 @@ export default function LeaderboardTable({
                 const isSecond = team.rank === 2;
                 const isThird = team.rank === 3;
 
+                // Seamlessly supports both 'name' and 'team' properties
                 const displayName = team.name || team.team || "Unknown Team";
                 const displayCategory =
                   team.category_group || team.category_name || "";
 
-                // ⚡ UNBREAKABLE KEY
                 const animationKey = team.id || displayName;
 
                 return (
@@ -194,7 +197,9 @@ export default function LeaderboardTable({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    className={`grid grid-cols-[100px_1fr_120px] items-center gap-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors py-5 px-8 relative z-10 ${isFirst ? "bg-white/5" : ""}`}
+                    className={`grid grid-cols-[100px_1fr_120px] items-center gap-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors py-5 px-8 relative z-10 ${
+                      isFirst ? "bg-white/5" : ""
+                    }`}
                   >
                     {/* Rank Column */}
                     <div className="flex justify-center">
@@ -211,7 +216,7 @@ export default function LeaderboardTable({
                       >
                         {isFirst ? (
                           <>
-                            <Trophy className="w-5 h-5 drop-shadow-md" />
+                            <Crown className="w-5 h-5 drop-shadow-md" />
                             {team.isTie && (
                               <span className="text-[6px] uppercase tracking-widest mt-0.5 opacity-80 leading-none">
                                 Tie
@@ -256,7 +261,9 @@ export default function LeaderboardTable({
                       </div>
                       <div className="truncate">
                         <p
-                          className={`font-black uppercase tracking-tight text-xl truncate ${isFirst ? "text-white" : "text-zinc-300"}`}
+                          className={`font-black uppercase tracking-tight text-xl truncate ${
+                            isFirst ? "text-white" : "text-zinc-300"
+                          }`}
                         >
                           {displayName}
                         </p>
