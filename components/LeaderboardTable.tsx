@@ -1,26 +1,21 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, Medal, Award, Loader2, Crown } from "lucide-react";
+import { Trophy, Medal, Award, Loader2 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 // ==========================================
-// 1. TYPES (Matched to team_leaderboard View)
+// 1. TYPES
 // ==========================================
 type TeamScore = {
-  id: string;
-  team?: string;           // Supports view outputting 'team'
-  name?: string;           // Supports view outputting 'name'
-  total_points: number;    // Calculated by team_leaderboard (includes bonus & penalty)
+  id: string; 
+  team: string; 
+  name?: string; 
+  total_points: number;
   color: string;
   category_name?: string;
   category_group?: string;
-};
-
-type RankedTeamScore = TeamScore & {
-  rank: number;
-  isTie: boolean;
 };
 
 // ==========================================
@@ -32,7 +27,7 @@ function useLiveLeaderboardData(categoryFilter?: string) {
 
   const fetchLeaderboard = async () => {
     try {
-      // ⚡ Target team_leaderboard so bonus/penalty points are included
+      // ⚡ Fetch directly from the view with calculated bonus/penalties
       let query = supabase
         .from("team_leaderboard")
         .select("*")
@@ -45,7 +40,7 @@ function useLiveLeaderboardData(categoryFilter?: string) {
       const { data: dbData, error } = await query;
 
       if (error) {
-        console.error("Leaderboard Fetch Error:", error.message);
+        console.error("Leaderboard Fetch Error:", error);
       } else if (dbData) {
         setData(dbData as TeamScore[]);
       }
@@ -59,7 +54,7 @@ function useLiveLeaderboardData(categoryFilter?: string) {
   useEffect(() => {
     fetchLeaderboard();
 
-    // ⚡ Listen to both results and teams tables for instant bonus/penalty updates
+    // ⚡ Listen to the underlying tables that feed the view
     const resultsChannel = supabase
       .channel(`table-results-sync-${categoryFilter || "all"}`)
       .on(
@@ -107,12 +102,11 @@ export default function LeaderboardTable({
   );
   const activeData = providedData || liveData;
 
-  // ==========================================
-  // ⚡ DENSE RANKING ENGINE (Matches Leaderboard Page)
-  // ==========================================
-  const rankedData: RankedTeamScore[] = useMemo(() => {
+  // ⚡ DENSE RANKING ENGINE (Handles Ties)
+  const rankedData = useMemo(() => {
     if (!activeData || activeData.length === 0) return [];
 
+    // Sort descending
     const sorted = [...activeData].sort(
       (a, b) => (b.total_points || 0) - (a.total_points || 0),
     );
@@ -125,9 +119,10 @@ export default function LeaderboardTable({
         currentRank++;
       }
       prevPoints = team.total_points;
-      return { ...team, rank: currentRank, isTie: false };
+      return { ...team, rank: currentRank };
     });
 
+    // Determine if a rank is shared
     const rankCounts = ranked.reduce(
       (acc, t) => {
         acc[t.rank] = (acc[t.rank] || 0) + 1;
@@ -162,143 +157,122 @@ export default function LeaderboardTable({
   }
 
   return (
-    <div className="bg-zinc-900/40 rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/5 backdrop-blur-xl relative">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    <div className="w-full space-y-4">
+      <AnimatePresence mode="popLayout">
+        {rankedData.map((team, index) => {
+          const isFirst = team.rank === 1;
+          const isSecond = team.rank === 2;
+          const isThird = team.rank === 3;
 
-      <div className="overflow-x-auto custom-scrollbar">
-        <div className="min-w-[600px] flex flex-col">
-          {/* ⚡ HEADER */}
-          <div className="grid grid-cols-[100px_1fr_120px] gap-4 bg-black/40 text-zinc-500 uppercase text-[10px] tracking-[0.2em] font-black border-b border-white/5 py-5 px-8">
-            <div className="text-center">Rank</div>
-            <div>Team Node</div>
-            <div className="text-right">Total Score</div>
-          </div>
+          const displayName = team.name || team.team || "Unknown Team";
+          const displayCategory = team.category_group || team.category_name || "";
 
-          {/* ⚡ BODY */}
-          <div className="relative flex flex-col text-white">
-            <AnimatePresence mode="popLayout">
-              {rankedData.map((team) => {
-                const isFirst = team.rank === 1;
-                const isSecond = team.rank === 2;
-                const isThird = team.rank === 3;
+          // ⚡ UNBREAKABLE KEY
+          const animationKey = team.id || displayName;
 
-                // Seamlessly supports both 'name' and 'team' properties
-                const displayName = team.name || team.team || "Unknown Team";
-                const displayCategory =
-                  team.category_group || team.category_name || "";
+          return (
+            <motion.div
+              key={animationKey}
+              layout="position"
+              initial={{ opacity: 0, scale: 0.95, x: -20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 30,
+                delay: index * 0.05, 
+              }}
+              // ⚡ MOBILE RESPONSIVE CARD LAYOUT
+              className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-6 rounded-2xl sm:rounded-[2rem] border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
+                isFirst
+                  ? "bg-[#0a0a0a]/90 shadow-2xl z-20"
+                  : "bg-black/40 border-white/5 hover:bg-white/[0.02] z-10"
+              }`}
+              style={{
+                borderColor: isFirst ? team.color : undefined,
+                boxShadow: isFirst ? `0 0 30px ${team.color}25` : undefined,
+              }}
+            >
+              {/* Dynamic Color Accent Line */}
+              <div
+                className="absolute left-0 top-0 bottom-0 w-1.5 sm:w-2 opacity-90"
+                style={{ backgroundColor: team.color }}
+              />
 
-                const animationKey = team.id || displayName;
+              <div className="flex items-center gap-4 md:gap-5 pl-2 sm:pl-3 w-full sm:w-auto border-b border-white/5 pb-4 sm:border-0 sm:pb-0">
+                {/* ⚡ RANK BADGES (Gold, Silver, Bronze) */}
+                <div
+                  className={`w-12 h-12 md:w-14 md:h-14 flex flex-col items-center justify-center rounded-[1rem] md:rounded-2xl font-black text-lg md:text-xl shadow-inner shrink-0 leading-none ${
+                    isFirst
+                      ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30"
+                      : isSecond
+                        ? "bg-zinc-300/10 text-zinc-300 border border-zinc-300/20"
+                        : isThird
+                          ? "bg-amber-700/20 text-amber-500 border border-amber-700/30"
+                          : "bg-black/50 text-zinc-500 border border-white/5"
+                  }`}
+                >
+                  {isFirst ? (
+                    <Trophy className="w-5 h-5 md:w-6 md:h-6 drop-shadow-md" />
+                  ) : isSecond ? (
+                    <Medal className="w-5 h-5 md:w-6 md:h-6" />
+                  ) : isThird ? (
+                    <Award className="w-5 h-5 md:w-6 md:h-6" />
+                  ) : (
+                    <span>#{team.rank}</span>
+                  )}
+                  
+                  {/* Tie Indicator */}
+                  {team.isTie && (
+                    <span className="text-[5px] sm:text-[6px] uppercase tracking-widest mt-1 opacity-90">
+                      Tie
+                    </span>
+                  )}
+                </div>
 
-                return (
-                  <motion.div
-                    key={animationKey}
-                    layout="position"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                    className={`grid grid-cols-[100px_1fr_120px] items-center gap-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors py-5 px-8 relative z-10 ${
-                      isFirst ? "bg-white/5" : ""
+                <div className="truncate">
+                  <h4
+                    className={`text-lg sm:text-xl md:text-2xl font-black uppercase tracking-tight truncate ${
+                      isFirst ? "text-white" : "text-zinc-200"
                     }`}
                   >
-                    {/* Rank Column */}
-                    <div className="flex justify-center">
-                      <div
-                        className={`w-12 h-12 flex flex-col items-center justify-center rounded-2xl font-black text-lg shadow-inner ${
-                          isFirst
-                            ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30"
-                            : isSecond
-                              ? "bg-zinc-300/10 text-zinc-300 border border-zinc-300/20"
-                              : isThird
-                                ? "bg-amber-700/20 text-amber-500 border border-amber-700/30"
-                                : "bg-black/50 text-zinc-600 border border-white/5"
-                        }`}
-                      >
-                        {isFirst ? (
-                          <>
-                            <Crown className="w-5 h-5 drop-shadow-md" />
-                            {team.isTie && (
-                              <span className="text-[6px] uppercase tracking-widest mt-0.5 opacity-80 leading-none">
-                                Tie
-                              </span>
-                            )}
-                          </>
-                        ) : isSecond ? (
-                          <>
-                            <Medal className="w-5 h-5" />
-                            {team.isTie && (
-                              <span className="text-[6px] uppercase tracking-widest mt-0.5 opacity-80 leading-none">
-                                Tie
-                              </span>
-                            )}
-                          </>
-                        ) : isThird ? (
-                          <>
-                            <Award className="w-5 h-5" />
-                            {team.isTie && (
-                              <span className="text-[6px] uppercase tracking-widest mt-0.5 opacity-80 leading-none">
-                                Tie
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          `#${team.rank}`
-                        )}
-                      </div>
-                    </div>
+                    {displayName}
+                  </h4>
+                  {displayCategory && (
+                    <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest mt-1 truncate">
+                      {displayCategory}
+                    </p>
+                  )}
+                </div>
+              </div>
 
-                    {/* Team Name Column */}
-                    <div className="flex items-center gap-4 truncate">
-                      <div className="relative flex items-center justify-center shrink-0">
-                        <span
-                          className="absolute w-8 h-8 rounded-full opacity-20 animate-pulse"
-                          style={{ backgroundColor: team.color || "#cccccc" }}
-                        ></span>
-                        <span
-                          className="w-4 h-4 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)] z-10"
-                          style={{ backgroundColor: team.color || "#cccccc" }}
-                        ></span>
-                      </div>
-                      <div className="truncate">
-                        <p
-                          className={`font-black uppercase tracking-tight text-xl truncate ${
-                            isFirst ? "text-white" : "text-zinc-300"
-                          }`}
-                        >
-                          {displayName}
-                        </p>
-                        {displayCategory && (
-                          <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest mt-1 truncate">
-                            {displayCategory}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Points Column */}
-                    <div className="flex flex-col items-end">
-                      <motion.span
-                        key={team.total_points}
-                        initial={{ color: team.color, scale: 1.2 }}
-                        animate={{
-                          color: isFirst ? "#eab308" : "#ffffff",
-                          scale: 1,
-                        }}
-                        className="font-black text-3xl tabular-nums tracking-tighter leading-none"
-                      >
-                        {team.total_points}
-                      </motion.span>
-                      <span className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-600 mt-1">
-                        PTS
-                      </span>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
+              {/* Points Display */}
+              <div className="w-full sm:w-auto flex items-center justify-between sm:block pl-2 sm:pl-0 sm:text-right">
+                <p className="sm:hidden text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">
+                  Total Points
+                </p>
+                <div className="text-right flex flex-col items-end">
+                  <motion.span
+                    key={team.total_points}
+                    initial={{ color: team.color, scale: 1.2 }}
+                    animate={{
+                      color: isFirst ? "#eab308" : "#ffffff", // Gold if 1st, White otherwise
+                      scale: 1,
+                    }}
+                    className="font-black text-3xl md:text-4xl tabular-nums tracking-tighter leading-none block"
+                  >
+                    {team.total_points}
+                  </motion.span>
+                  <span className="hidden sm:block text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 mt-1 md:mt-2">
+                    PTS
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }
