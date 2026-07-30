@@ -137,6 +137,7 @@ export default function Home() {
   const rankedGeneral = useMemo(() => rankTeams(data.general), [data.general]);
   const rankedHifz = useMemo(() => rankTeams(data.hifz), [data.hifz]);
 
+  // ⚡ FIXED: Added ": any" to satisfy TypeScript
   const scrollAnimation: any = {
     initial: { opacity: 0, y: 40 },
     whileInView: { opacity: 1, y: 0 },
@@ -150,7 +151,7 @@ export default function Home() {
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none" />
       <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
 
-      {/* Architectural Grid Background */}
+      {/* ⚡ NEW: Premium Architectural Grid Background */}
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-16 md:space-y-28 w-full px-4 sm:px-6 pb-28 md:pb-20 relative z-10">
@@ -160,8 +161,7 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          // ⚡ Strict Rounded Rectangle (rounded-2xl)
-          className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-xl"
+          className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-3xl md:rounded-[3rem] shadow-2xl relative overflow-hidden backdrop-blur-xl"
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
@@ -172,8 +172,7 @@ export default function Home() {
             transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 20 }}
             className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mb-4 md:mb-6 relative z-10"
           >
-            {/* ⚡ Strict Rounded Rectangle (rounded-2xl instead of rounded-full) */}
-            <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 cursor-pointer">
+            <div className="w-full h-full rounded-full bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 cursor-pointer">
               <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
                 Drop<br/>Logo
               </span>
@@ -186,8 +185,7 @@ export default function Home() {
             transition={{ delay: 0.4 }}
             className="flex items-center justify-center relative z-10 mb-2"
           >
-            {/* ⚡ Strict Rounded Rectangle Badge (rounded-lg) */}
-            <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -228,10 +226,9 @@ export default function Home() {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="w-full sm:w-auto"
             >
-              {/* ⚡ Strict Rounded Rectangle Button (rounded-xl) */}
               <Link
                 href="#leaderboard"
-                className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
+                className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-2xl md:rounded-full hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
               >
                 <TrendingUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" /> Live Leaderboard
               </Link>
@@ -242,10 +239,9 @@ export default function Home() {
               transition={{ delay: 0.6, duration: 0.5 }}
               className="w-full sm:w-auto"
             >
-              {/* ⚡ Strict Rounded Rectangle Button (rounded-xl) */}
               <Link
                 href="/search"
-                className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
+                className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-2xl md:rounded-full hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
               >
                 <Search className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Find Participant
               </Link>
@@ -255,12 +251,10 @@ export default function Home() {
 
         {/* --- 2. LIVE COUNTDOWN --- */}
         <motion.section {...scrollAnimation} className="relative group">
-          {/* ⚡ Strict Rounded Rectangle (rounded-2xl) */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-2xl blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
-          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-2xl p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl">
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-3xl md:rounded-[3rem] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
+          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-3xl md:rounded-[3rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl">
             <div className="flex flex-col items-center">
-              {/* ⚡ Strict Rounded Rectangle Badge (rounded-lg) */}
-              <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
+              <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
                 <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result Declaration
               </span>
               <Countdown targetDate="2026-09-23T19:00:00" />
@@ -284,13 +278,12 @@ export default function Home() {
         <motion.section {...scrollAnimation} id="leaderboard" className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           
           {/* 🟢 GENERAL CHAMPIONSHIP */}
-          {/* ⚡ Strict Rounded Rectangle Container (rounded-2xl) */}
-          <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-2xl shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
+          <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-3xl md:rounded-[3.5rem] shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-indigo-500/5 blur-[100px] pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-1000" />
 
             <div className="flex items-center justify-between mb-6 md:mb-10 relative z-10">
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="p-2.5 md:p-3 bg-black/50 border border-white/10 rounded-xl shadow-inner shrink-0">
+                <div className="p-2.5 md:p-3 bg-black/50 border border-white/10 rounded-xl md:rounded-2xl shadow-inner shrink-0">
                   <Trophy className="text-yellow-500 w-5 h-5 md:w-8 md:h-8" />
                 </div>
                 <div>
@@ -308,7 +301,7 @@ export default function Home() {
               {loading ? (
                 <div className="animate-pulse space-y-4">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-xl w-full" />
+                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-2xl md:rounded-3xl w-full" />
                   ))}
                 </div>
               ) : (
@@ -332,8 +325,7 @@ export default function Home() {
                           damping: 30,
                           delay: index * 0.05 
                         }}
-                        // ⚡ Strict Rounded Rectangle Row (rounded-xl)
-                        className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-6 rounded-xl border backdrop-blur-md overflow-hidden transition-all gap-3 sm:gap-0 ${
+                        className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 md:p-6 rounded-2xl sm:rounded-[2rem] border backdrop-blur-md overflow-hidden transition-all gap-3 sm:gap-0 ${
                           isFirst
                             ? "bg-[#0a0a0a]/90 shadow-2xl z-10"
                             : "bg-black/40 hover:bg-white/[0.02] z-0"
@@ -351,7 +343,7 @@ export default function Home() {
                         <div className="flex items-center gap-3 sm:gap-5 pl-2 sm:pl-3 w-full sm:w-auto border-b border-white/5 pb-3 sm:border-0 sm:pb-0">
                           
                           <div
-                            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center font-black text-lg sm:text-xl shadow-inner shrink-0 leading-none ${
+                            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center font-black text-lg sm:text-xl shadow-inner shrink-0 leading-none ${
                               isFirst
                                 ? "bg-yellow-500/20 text-yellow-500 border border-yellow-500/30"
                                 : isSecond
@@ -422,8 +414,7 @@ export default function Home() {
           </div>
 
           {/* 🟣 HIFZ SPECIAL CATEGORY */}
-          {/* ⚡ Strict Rounded Rectangle Container (rounded-2xl) */}
-          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group">
+          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-3xl md:rounded-[3.5rem] shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group">
             <Zap className="absolute -top-10 -right-10 w-40 h-40 text-indigo-500/10 rotate-12 pointer-events-none group-hover:text-indigo-500/20 transition-colors duration-700" />
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-indigo-900/20 to-transparent pointer-events-none" />
 
@@ -448,14 +439,12 @@ export default function Home() {
             </div>
 
             <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 md:gap-4">
-              {/* ⚡ MAP OVER RANKED HIFZ DATA */}
               {rankedHifz.slice(0, 2).map((team: any) => {
                 const isFirst = team.rank === 1;
                 
                 return (
                   <div
                     key={team.id || team.team}
-                    // ⚡ Strict Rounded Rectangle (rounded-xl)
                     className="bg-black/40 border p-3 rounded-xl text-center relative overflow-hidden transition-all hover:bg-white/5"
                     style={{ borderColor: team.color }}
                   >
@@ -486,8 +475,7 @@ export default function Home() {
         {/* --- 5. LOGIC-LOCKED TEAM COMPARISON --- */}
         <motion.section {...scrollAnimation}>
           <div className="mb-6 md:mb-12 text-center md:text-left px-2">
-            {/* ⚡ Strict Rounded Rectangle Badge (rounded-lg) */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
               <TrendingUp className="w-3 h-3 text-indigo-400" /> Data Intelligence
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white uppercase">
@@ -502,8 +490,7 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-yellow-500/5 blur-[120px] pointer-events-none rounded-[100%]" />
 
           <div className="text-center mb-8 md:mb-16 relative z-10">
-            {/* ⚡ Strict Rounded Rectangle Badge (rounded-lg) */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black/80 border border-yellow-500/20 text-yellow-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] mb-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/80 border border-yellow-500/20 text-yellow-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] mb-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
               <Award className="w-3 h-3 md:w-4 md:h-4" /> Hall of Fame
             </div>
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white uppercase px-2">
@@ -516,7 +503,7 @@ export default function Home() {
 
           <div className="relative z-10">
             {loading ? (
-              <div className="h-64 animate-pulse bg-zinc-900/30 border border-white/5 rounded-2xl backdrop-blur-xl"></div>
+              <div className="h-64 animate-pulse bg-zinc-900/30 border border-white/5 rounded-3xl backdrop-blur-xl"></div>
             ) : (
               <CategoryToppers toppers={data.toppers} />
             )}
