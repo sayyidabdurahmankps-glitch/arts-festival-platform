@@ -1,43 +1,66 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { 
   Power, 
   Rocket, 
   ShieldCheck, 
   Terminal, 
   Activity,
-  Server
+  Server,
+  Fingerprint
 } from "lucide-react";
 
 export default function LaunchPage() {
+  const router = useRouter();
   const [bootStage, setBootStage] = useState(0);
-  const [systemReady, setSystemReady] = useState(false);
+  const [isBooting, setIsBooting] = useState(false);
+  const [isLaunched, setIsLaunched] = useState(false);
 
-  // Simulated Boot Sequence
-  useEffect(() => {
-    const sequence = async () => {
-      await new Promise((res) => setTimeout(res, 800));
-      setBootStage(1); // Power On
-      await new Promise((res) => setTimeout(res, 1200));
-      setBootStage(2); // Establishing Database Connection
-      await new Promise((res) => setTimeout(res, 1500));
-      setBootStage(3); // Security Checks
-      await new Promise((res) => setTimeout(res, 1000));
-      setSystemReady(true); // Ready to Launch
-    };
-    sequence();
-  }, []);
+  // ⚡ VIP Manual Trigger Sequence
+  const handleGuestLaunch = async () => {
+    if (isBooting || isLaunched) return;
+    
+    setIsBooting(true);
+
+    // Cinematic Boot Sequence
+    await new Promise((res) => setTimeout(res, 800));
+    setBootStage(1); // Power On
+    
+    await new Promise((res) => setTimeout(res, 1200));
+    setBootStage(2); // Establishing Database Connection
+    
+    await new Promise((res) => setTimeout(res, 1500));
+    setBootStage(3); // Security Checks
+    
+    await new Promise((res) => setTimeout(res, 1000));
+    setIsLaunched(true); // Final Success State
+
+    // Dramatic pause before pushing to the Home Page
+    await new Promise((res) => setTimeout(res, 1500));
+    router.push("/");
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#050505] text-zinc-400 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden relative items-center justify-center p-6">
       
       {/* --- Ambient Background --- */}
-      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] pointer-events-none" style={{ borderRadius: '2rem' }} />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[150px] pointer-events-none" style={{ borderRadius: '2rem' }} />
+      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] pointer-events-none rounded-2xl" />
+      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[150px] pointer-events-none rounded-2xl" />
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none z-0" />
+
+      {/* --- Global Success Flash (Triggers right before redirect) --- */}
+      <AnimatePresence>
+        {isLaunched && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-indigo-500/20 z-50 pointer-events-none mix-blend-screen"
+          />
+        )}
+      </AnimatePresence>
 
       {/* --- Main Launch Console --- */}
       <motion.div 
@@ -50,29 +73,24 @@ export default function LaunchPage() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/50">
           <div className="flex items-center gap-2 text-zinc-500">
             <Terminal className="w-4 h-4" />
-            <span className="text-[10px] font-mono uppercase tracking-[0.2em]">FestOS_Gateway_v1.0</span>
+            <span className="text-[10px] font-mono uppercase tracking-[0.2em]">FestOS_Inauguration_Protocol</span>
           </div>
           <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-sm ${bootStage >= 1 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-700'} transition-colors duration-500`} />
             <div className={`w-2 h-2 rounded-sm ${bootStage >= 2 ? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'bg-zinc-700'} transition-colors duration-500`} />
-            <div className={`w-2 h-2 rounded-sm ${systemReady ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-700'} transition-colors duration-500`} />
+            <div className={`w-2 h-2 rounded-sm ${isLaunched ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-zinc-700'} transition-colors duration-500`} />
           </div>
         </div>
 
         <div className="p-8 sm:p-12 text-center flex flex-col items-center">
           
-          {/* Logo / Icon Area */}
+          {/* Guest Authorization Notice */}
           <motion.div 
-            animate={{ 
-              boxShadow: systemReady ? "0 0 60px rgba(99,102,241,0.2)" : "0 0 0px rgba(99,102,241,0)"
-            }}
-            className="w-24 h-24 sm:w-32 sm:h-32 mb-8 bg-black/60 border border-white/10 rounded-2xl flex items-center justify-center transition-all duration-1000"
+            animate={{ opacity: isBooting ? 0 : 1 }}
+            className="mb-8 px-4 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 shadow-[0_0_15px_rgba(234,179,8,0.15)]"
           >
-            {systemReady ? (
-              <Rocket className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 animate-pulse" />
-            ) : (
-              <Power className="w-10 h-10 sm:w-12 sm:h-12 text-zinc-600" />
-            )}
+            <Fingerprint className="w-3 h-3" />
+            Awaiting Guest Authorization
           </motion.div>
 
           {/* Title */}
@@ -83,47 +101,74 @@ export default function LaunchPage() {
             Synergy • Artistry • Legacy
           </p>
 
-          {/* Boot Sequence Status Box */}
-          <div className="w-full bg-black/50 border border-white/5 rounded-xl p-6 mb-10 text-left space-y-4">
-            <BootStep 
-              active={bootStage >= 1} 
-              icon={Server} 
-              text="Initializing Core Mainframe" 
-            />
-            <BootStep 
-              active={bootStage >= 2} 
-              icon={Activity} 
-              text="Establishing Real-time Uplink" 
-            />
-            <BootStep 
-              active={bootStage >= 3} 
-              icon={ShieldCheck} 
-              text="Verifying Security Protocols" 
-            />
-          </div>
-
-          {/* Action Button */}
-          <AnimatePresence>
-            {systemReady ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full"
+          {/* ⚡ THE BIG VIP LAUNCH BUTTON */}
+          <AnimatePresence mode="popLayout">
+            {!isBooting ? (
+              <motion.button
+                key="launch-btn"
+                onClick={handleGuestLaunch}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.1, filter: "blur(10px)" }}
+                className="group relative flex flex-col items-center justify-center w-48 h-48 sm:w-56 sm:h-56 bg-indigo-600 rounded-2xl shadow-[0_0_50px_rgba(79,70,229,0.4)] hover:shadow-[0_0_80px_rgba(79,70,229,0.6)] hover:bg-indigo-500 transition-all duration-500 mb-6 active:scale-95 border-2 border-indigo-400/50"
               >
-                <Link 
-                  href="/"
-                  className="group relative w-full flex items-center justify-center gap-3 bg-indigo-600 text-white font-black uppercase tracking-widest text-sm px-8 py-5 rounded-xl hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_50px_rgba(79,70,229,0.5)] overflow-hidden"
-                >
-                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-                  <Power className="w-5 h-5" />
-                  Initialize System
-                </Link>
-              </motion.div>
+                <div className="absolute inset-0 bg-white/20 rounded-2xl animate-ping opacity-20" />
+                <Power className="w-16 h-16 sm:w-20 sm:h-20 text-white mb-2 drop-shadow-xl" />
+                <span className="text-white font-black uppercase tracking-widest text-xs sm:text-sm drop-shadow-md">
+                  Initiate Launch
+                </span>
+              </motion.button>
             ) : (
-              <div className="w-full py-5 rounded-xl bg-white/5 border border-white/5 text-zinc-600 font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 cursor-not-allowed">
-                <span className="w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
-                Booting Sequence...
-              </div>
+              <motion.div
+                key="boot-sequence"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="w-full flex flex-col items-center"
+              >
+                <motion.div 
+                  animate={{ 
+                    boxShadow: isLaunched ? "0 0 60px rgba(16,185,129,0.4)" : "0 0 40px rgba(99,102,241,0.2)",
+                    borderColor: isLaunched ? "rgba(16,185,129,0.5)" : "rgba(99,102,241,0.5)"
+                  }}
+                  className="w-24 h-24 sm:w-28 sm:h-28 mb-8 bg-black/60 border rounded-2xl flex items-center justify-center transition-all duration-1000"
+                >
+                  {isLaunched ? (
+                    <Rocket className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-400" />
+                  ) : (
+                    <Power className="w-10 h-10 sm:w-12 sm:h-12 text-indigo-400 animate-pulse" />
+                  )}
+                </motion.div>
+
+                {/* Boot Sequence Status Box */}
+                <div className="w-full bg-black/50 border border-white/5 rounded-2xl p-6 text-left space-y-4 shadow-inner">
+                  <BootStep 
+                    active={bootStage >= 1} 
+                    icon={Server} 
+                    text="Initializing Core Mainframe" 
+                  />
+                  <BootStep 
+                    active={bootStage >= 2} 
+                    icon={Activity} 
+                    text="Establishing Real-time Uplink" 
+                  />
+                  <BootStep 
+                    active={bootStage >= 3} 
+                    icon={ShieldCheck} 
+                    text="Verifying Security Protocols" 
+                  />
+                  {isLaunched && (
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="pt-4 mt-4 border-t border-white/10 text-center"
+                    >
+                      <span className="text-emerald-400 font-black uppercase tracking-[0.3em] text-sm flex items-center justify-center gap-2">
+                        <Rocket className="w-4 h-4" /> Platform Successfully Launched
+                      </span>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
             )}
           </AnimatePresence>
 
@@ -136,10 +181,10 @@ export default function LaunchPage() {
 // Sub-component for the terminal boot steps
 function BootStep({ active, icon: Icon, text }: { active: boolean, icon: any, text: string }) {
   return (
-    <div className={`flex items-center gap-4 font-mono text-xs sm:text-sm uppercase tracking-wider transition-colors duration-500 ${active ? 'text-emerald-400' : 'text-zinc-700'}`}>
+    <div className={`flex items-center gap-4 font-mono text-xs sm:text-sm uppercase tracking-wider transition-colors duration-500 ${active ? 'text-indigo-400' : 'text-zinc-700'}`}>
       <Icon className={`w-4 h-4 ${active ? 'animate-pulse' : ''}`} />
       <span className="flex-1">{text}</span>
-      <span className="text-[10px]">
+      <span className={`text-[10px] ${active ? 'text-emerald-500' : 'text-zinc-700'}`}>
         {active ? '[ OK ]' : '[ WAIT ]'}
       </span>
     </div>
