@@ -12,6 +12,7 @@ import {
   TrendingUp,
   Rocket,
   Search,
+  Crown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -87,7 +88,7 @@ export default function Home() {
         },
         () => {
           fetchAllData();
-        }
+        },
       )
       .subscribe();
 
@@ -98,7 +99,7 @@ export default function Home() {
         { event: "*", schema: "public", table: "teams" },
         () => {
           fetchAllData();
-        }
+        },
       )
       .subscribe();
 
@@ -115,8 +116,10 @@ export default function Home() {
     let currentRank = 1;
     let prevPoints: number | null = null;
 
-    const sorted = [...teams].sort((a, b) => Number(b.total_points || 0) - Number(a.total_points || 0));
-    
+    const sorted = [...teams].sort(
+      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0),
+    );
+
     const ranked = sorted.map((team) => {
       const pts = Number(team.total_points || 0);
       if (prevPoints !== null && pts < prevPoints) {
@@ -141,7 +144,7 @@ export default function Home() {
     initial: { opacity: 0, y: 40 },
     whileInView: { opacity: 1, y: 0 },
     viewport: { once: true, margin: "-50px" },
-    transition: { duration: 0.6, ease: "easeOut" }
+    transition: { duration: 0.6, ease: "easeOut" },
   };
 
   return (
@@ -154,7 +157,6 @@ export default function Home() {
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-16 md:space-y-28 w-full px-4 sm:px-6 pb-28 md:pb-20 relative z-10">
-        
         {/* --- 1. HERO SECTION --- */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -169,13 +171,20 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 20 }}
+            transition={{
+              delay: 0.3,
+              type: "spring",
+              stiffness: 200,
+              damping: 20,
+            }}
             className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mb-4 md:mb-6 relative z-10"
           >
             {/* ⚡ Inner Box (rounded-2xl) */}
             <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 cursor-pointer">
               <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
-                Drop<br/>Logo
+                Drop
+                <br />
+                Logo
               </span>
             </div>
           </motion.div>
@@ -233,7 +242,8 @@ export default function Home() {
                 href="#leaderboard"
                 className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
               >
-                <TrendingUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" /> Live Leaderboard
+                <TrendingUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />{" "}
+                Live Leaderboard
               </Link>
             </motion.div>
             <motion.div
@@ -247,7 +257,8 @@ export default function Home() {
                 href="/search"
                 className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
               >
-                <Search className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Find Participant
+                <Search className="w-4 h-4 group-hover:rotate-12 transition-transform" />{" "}
+                Find Participant
               </Link>
             </motion.div>
           </div>
@@ -261,7 +272,8 @@ export default function Home() {
             <div className="flex flex-col items-center">
               {/* ⚡ Badge (rounded-xl) */}
               <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
-                <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result Declaration
+                <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result
+                Declaration
               </span>
               <Countdown targetDate="2026-09-23T19:00:00" />
             </div>
@@ -281,8 +293,11 @@ export default function Home() {
         </motion.section>
 
         {/* --- 4. DUAL LEADERBOARD --- */}
-        <motion.section {...scrollAnimation} id="leaderboard" className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-          
+        <motion.section
+          {...scrollAnimation}
+          id="leaderboard"
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8"
+        >
           {/* 🟢 GENERAL CHAMPIONSHIP */}
           {/* ⚡ Strict Squircle (rounded-[2rem]) */}
           <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
@@ -308,13 +323,17 @@ export default function Home() {
               {loading ? (
                 <div className="animate-pulse space-y-4">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-2xl w-full" />
+                    <div
+                      key={i}
+                      className="h-20 md:h-24 bg-white/5 rounded-2xl w-full"
+                    />
                   ))}
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
                   {rankedGeneral.map((team: any, index: number) => {
-                    const animationKey = team.id || team.name || team.team || index;
+                    const animationKey =
+                      team.id || team.name || team.team || index;
                     const isFirst = team.rank === 1;
 
                     return (
@@ -328,7 +347,7 @@ export default function Home() {
                           type: "spring",
                           stiffness: 350,
                           damping: 30,
-                          delay: index * 0.05 
+                          delay: index * 0.05,
                         }}
                         // ⚡ Inner Card (rounded-2xl) - Optimized for Mobile Stacking
                         className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 md:p-8 rounded-2xl border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
@@ -338,7 +357,9 @@ export default function Home() {
                         }`}
                         style={{
                           borderColor: team.color,
-                          boxShadow: isFirst ? `0 0 40px ${team.color}25` : undefined,
+                          boxShadow: isFirst
+                            ? `0 0 40px ${team.color}25`
+                            : undefined,
                         }}
                       >
                         <div
@@ -368,7 +389,10 @@ export default function Home() {
                               <>
                                 <span>#{team.rank}</span>
                                 {team.isTie && (
-                                  <span className="text-[5px] sm:text-[6px] uppercase tracking-widest mt-1 opacity-90" style={{ color: team.color }}>
+                                  <span
+                                    className="text-[5px] sm:text-[6px] uppercase tracking-widest mt-1 opacity-90"
+                                    style={{ color: team.color }}
+                                  >
                                     Tie
                                   </span>
                                 )}
@@ -448,7 +472,7 @@ export default function Home() {
               {/* ⚡ MAP OVER RANKED HIFZ DATA */}
               {rankedHifz.slice(0, 2).map((team: any) => {
                 const isFirst = team.rank === 1;
-                
+
                 return (
                   <div
                     key={team.id || team.team}
@@ -485,7 +509,8 @@ export default function Home() {
           <div className="mb-6 md:mb-12 text-center md:text-left px-2">
             {/* ⚡ Badge (rounded-xl) */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
-              <TrendingUp className="w-3 h-3 text-indigo-400" /> Data Intelligence
+              <TrendingUp className="w-3 h-3 text-indigo-400" /> Data
+              Intelligence
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white uppercase">
               Head-to-Head <span className="text-zinc-600">Stats</span>
