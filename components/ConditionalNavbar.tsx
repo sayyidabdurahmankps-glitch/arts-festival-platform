@@ -54,14 +54,15 @@ export default function Navbar() {
     { name: "Gallery", href: "/gallery", icon: ImageIcon },
   ];
 
-  // Hide on admin, judge, and media routes
+  // ⚡ COMPLETELY REMOVE NAVBAR ON SPECIFIC ROUTES
   if (
+    !pathname ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/judge") ||
     pathname.startsWith("/media") ||
     pathname.startsWith("/launch")
   ) {
-    return null;
+    return null; // Renders absolutely nothing
   }
 
   return (
@@ -99,9 +100,11 @@ export default function Navbar() {
                   </Link>
                 );
               })}
+              
+              {/* ⚡ Strict Squircle Button (rounded-xl) */}
               <Link
                 href="/live"
-                className="flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-sm font-bold tracking-widest uppercase"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-sm font-bold tracking-widest uppercase"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -113,9 +116,10 @@ export default function Navbar() {
 
             {/* Mobile Menu Toggle */}
             <div className="md:hidden relative z-50">
+              {/* ⚡ Strict Squircle Toggle (rounded-xl) */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="text-zinc-400 hover:text-white transition-colors p-2 -mr-2 bg-white/5 rounded-full border border-white/10"
+                className="text-zinc-400 hover:text-white transition-colors p-2 -mr-2 bg-white/5 rounded-xl border border-white/10"
               >
                 {isOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -145,6 +149,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 + i * 0.05 }}
                   >
+                    {/* ⚡ Squircle Mobile Menu Item (rounded-2xl) */}
                     <Link
                       href={link.href}
                       className={`flex items-center justify-between p-4 rounded-2xl transition-all border ${
@@ -154,6 +159,7 @@ export default function Navbar() {
                       }`}
                     >
                       <div className="flex items-center gap-4">
+                        {/* ⚡ Squircle Icon Box (rounded-xl) */}
                         <div
                           className={`p-2 rounded-xl ${
                             isActive ? "bg-indigo-500/20" : "bg-black/50"
@@ -187,6 +193,7 @@ export default function Navbar() {
               transition={{ delay: 0.4 }}
               className="max-sm:hidden mt-auto pt-4 pb-8 border-t border-white/10"
             >
+              {/* ⚡ Squircle Big Mobile Button (rounded-2xl) */}
               <Link
                 href="/live"
                 className="max-sm:hidden flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:bg-indigo-500 transition-all active:scale-95"
