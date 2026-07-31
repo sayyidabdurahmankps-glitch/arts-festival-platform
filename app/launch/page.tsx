@@ -1,258 +1,211 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Power, 
-  Rocket, 
-  ShieldCheck, 
-  Terminal, 
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Menu,
+  X,
+  Trophy,
+  Calendar,
+  Search,
+  Sparkles,
+  Image as ImageIcon,
   Activity,
-  Server,
-  Fingerprint,
-  Check
+  ChevronRight,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-export default function LaunchPage() {
-  const router = useRouter();
-  const [bootStage, setBootStage] = useState(0);
-  const [isBooting, setIsBooting] = useState(false);
-  const [isLaunched, setIsLaunched] = useState(false);
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
 
-  // ⚡ VIP Manual Trigger Sequence
-  const handleGuestLaunch = async () => {
-    if (isBooting || isLaunched) return;
-    
-    setIsBooting(true);
+  // Detect scroll to add background opacity
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    // Cinematic Boot Sequence
-    await new Promise((res) => setTimeout(res, 800));
-    setBootStage(1); // Power On
-    
-    await new Promise((res) => setTimeout(res, 1200));
-    setBootStage(2); // Establishing Database Connection
-    
-    await new Promise((res) => setTimeout(res, 1500));
-    setBootStage(3); // Security Checks
-    
-    await new Promise((res) => setTimeout(res, 1000));
-    setIsLaunched(true); // Final Success State
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
-    // Dramatic pause before pushing to the Home Page
-    await new Promise((res) => setTimeout(res, 1500));
-    router.push("/");
-  };
+  // Close menu automatically on route change
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
 
-  // Calculate progress bar percentage
-  const progressPercent = bootStage === 0 ? 0 : bootStage === 1 ? 33 : bootStage === 2 ? 66 : 100;
+  const navLinks = [
+    { name: "Home", href: "/", icon: Sparkles },
+    { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
+    { name: "Events", href: "/events", icon: Calendar },
+    { name: "Search", href: "/search", icon: Search },
+    { name: "Results", href: "/results", icon: Activity },
+    { name: "Gallery", href: "/gallery", icon: ImageIcon },
+  ];
+
+  // ⚡ BULLETPROOF ROUTE CHECK: Uses optional chaining to prevent Vercel build crashes
+  if (
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/judge") ||
+    pathname?.startsWith("/media") ||
+    pathname?.startsWith("/launch")
+  ) {
+    return null; 
+  }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#050505] text-zinc-400 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden relative items-center justify-center p-4 sm:p-6">
-      
-      {/* ⚡ Force hide global Navbar/Header for full cinematic experience */}
-      <style>{`nav, header, #navbar { display: none !important; }`}</style>
+    <>
+      <nav
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+          scrolled || isOpen
+            ? "bg-[#0a0a0a]/80 backdrop-blur-md border-b border-white/5"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center h-16 md:h-20">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="text-2xl font-black text-white tracking-tighter flex items-center gap-2 relative z-50"
+            >
+              Fest<span className="text-indigo-500">OS</span>
+            </Link>
 
-      {/* --- Deep Ambient Background --- */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#050505]/80 to-[#050505] z-0 pointer-events-none" />
-      <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-600/10 blur-[150px] pointer-events-none rounded-[3rem]" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 blur-[150px] pointer-events-none rounded-[3rem]" />
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none z-0" />
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`font-semibold transition-all hover:text-indigo-400 ${
+                      isActive ? "text-indigo-500" : "text-zinc-400"
+                    }`}
+                  >
+                    {link.name}
+                  </Link>
+                );
+              })}
+              
+              <Link
+                href="/live"
+                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-sm font-bold tracking-widest uppercase"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                Live Feed
+              </Link>
+            </div>
 
-      {/* --- Global Success Flash --- */}
+            {/* Mobile Menu Toggle */}
+            <div className="md:hidden relative z-50">
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="text-zinc-400 hover:text-white transition-colors p-2 -mr-2 bg-white/5 rounded-xl border border-white/10"
+              >
+                {isOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* --- Premium Mobile Navigation Overlay --- */}
       <AnimatePresence>
-        {isLaunched && (
+        {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-indigo-500/20 z-50 pointer-events-none mix-blend-screen"
-          />
+            initial={{ opacity: 0, y: "-100%" }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: "-100%" }}
+            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+            className="fixed inset-0 z-40 bg-[#050505]/95 backdrop-blur-3xl md:hidden flex flex-col pt-24 px-6 pb-safe"
+          >
+            {/* Animated Links Container */}
+            <div className="flex-1 flex flex-col gap-2 overflow-y-auto hide-scrollbar pb-20">
+              {navLinks.map((link, i) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon; // ⚡ EXTRACTED TO PREVENT JSX TS ERROR
+
+                return (
+                  <motion.div
+                    key={link.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + i * 0.05 }}
+                  >
+                    <Link
+                      href={link.href}
+                      className={`flex items-center justify-between p-4 rounded-2xl transition-all border ${
+                        isActive
+                          ? "bg-indigo-500/10 border-indigo-500/20 text-white"
+                          : "bg-white/5 border-transparent text-zinc-400 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`p-2 rounded-xl ${
+                            isActive ? "bg-indigo-500/20" : "bg-black/50"
+                          }`}
+                        >
+                          <Icon
+                            className={`w-5 h-5 ${
+                              isActive ? "text-indigo-400" : "text-zinc-500"
+                            }`}
+                          />
+                        </div>
+                        <span className="text-lg font-black tracking-tight">
+                          {link.name}
+                        </span>
+                      </div>
+                      <ChevronRight
+                        className={`w-4 h-4 ${
+                          isActive ? "text-indigo-400" : "text-zinc-600"
+                        }`}
+                      />
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Bottom Pinned Live Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="max-sm:hidden mt-auto pt-4 pb-8 border-t border-white/10"
+            >
+              <Link
+                href="/live"
+                className="max-sm:hidden flex items-center justify-center gap-3 w-full p-4 rounded-2xl bg-indigo-600 text-white shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:bg-indigo-500 transition-all active:scale-95"
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                </span>
+                <span className="font-black uppercase tracking-widest max-sm:hidden text-sm">
+                  Enter Live Feed
+                </span>
+              </Link>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
-
-      {/* --- Main Launch Console --- */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        // ⚡ EXACT SQUIRCLE MATCH (rounded-[2rem] & solid minimalist background)
-        className="relative z-10 w-full max-w-3xl bg-[#0a0a0a]/95 border border-white/5 rounded-[2rem] shadow-2xl backdrop-blur-3xl overflow-hidden flex flex-col"
-      >
-        {/* Top Terminal Bar */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 sm:py-5 border-b border-white/5 bg-black/40">
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1.5 sm:gap-2">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-red-500/20 border border-red-500/50" />
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-yellow-500/20 border border-yellow-500/50" />
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-md bg-emerald-500/20 border border-emerald-500/50" />
-            </div>
-            <div className="w-px h-4 bg-white/10 mx-1 sm:mx-2" />
-            <Terminal className="w-3 h-3 sm:w-4 sm:h-4 text-zinc-500" />
-            <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-400 truncate">FestOS // Launch_Protocol</span>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-zinc-600 hidden sm:block">Status</span>
-            <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm ${isLaunched ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : isBooting ? 'bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)] animate-pulse' : 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]'} transition-colors duration-500`} />
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="p-6 sm:p-12 md:p-16 text-center flex flex-col items-center relative overflow-hidden">
-          
-          <AnimatePresence mode="wait">
-            {!isBooting ? (
-              /* --- PRE-LAUNCH STATE --- */
-              <motion.div
-                key="pre-launch"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-                className="flex flex-col items-center w-full"
-              >
-                <motion.div 
-                  animate={{ y: [0, -5, 0] }} 
-                  transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                  // ⚡ Inner Badge (rounded-xl)
-                  className="mb-8 px-4 sm:px-5 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-2 sm:gap-3 shadow-[0_0_20px_rgba(99,102,241,0.15)]"
-                >
-                  <Fingerprint className="w-3 h-3 sm:w-4 sm:h-4" />
-                  Awaiting VIP Authorization
-                </motion.div>
-
-                <h1 className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 mb-3">
-                  Fest<span className="text-indigo-500 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]">OS</span>
-                </h1>
-                <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.5em] text-zinc-500 mb-12 sm:mb-16">
-                  Synergy • Artistry • Legacy
-                </p>
-
-                {/* ⚡ THE BIG VIP LAUNCH BUTTON WITH SPINNING SQUIRCLES */}
-                <div className="relative w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 flex items-center justify-center">
-                  
-                  {/* Outer Spinning Ring - Squircle (rounded-[2rem]) */}
-                  <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
-                    className="absolute inset-0 rounded-[2rem] border border-indigo-500/20"
-                  />
-                  
-                  {/* Inner Spinning Ring - Squircle (rounded-2xl) */}
-                  <motion.div 
-                    animate={{ rotate: -360 }}
-                    transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
-                    className="absolute inset-3 sm:inset-4 rounded-2xl border border-purple-500/30 border-dashed"
-                  />
-
-                  {/* Core Button - Squircle (rounded-2xl) */}
-                  <button
-                    onClick={handleGuestLaunch}
-                    className="group relative z-10 w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 bg-indigo-600 rounded-2xl flex flex-col items-center justify-center shadow-[0_0_40px_rgba(79,70,229,0.5)] hover:shadow-[0_0_60px_rgba(79,70,229,0.8)] hover:bg-indigo-500 hover:scale-105 transition-all duration-500 active:scale-95 border border-indigo-400/50 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <Power className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-white mb-1.5 sm:mb-2 drop-shadow-xl group-hover:scale-110 transition-transform duration-500" />
-                    <span className="text-white font-black uppercase tracking-widest text-[8px] sm:text-[9px] md:text-[10px] drop-shadow-md">
-                      Initiate
-                    </span>
-                  </button>
-                </div>
-              </motion.div>
-
-            ) : (
-              /* --- BOOTING STATE --- */
-              <motion.div
-                key="boot-sequence"
-                initial={{ opacity: 0, scale: 1.1 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center w-full max-w-lg mx-auto"
-              >
-                <motion.div 
-                  animate={{ 
-                    boxShadow: isLaunched ? "0 0 60px rgba(16,185,129,0.4)" : "0 0 30px rgba(99,102,241,0.2)",
-                    borderColor: isLaunched ? "rgba(16,185,129,0.5)" : "rgba(99,102,241,0.5)"
-                  }}
-                  // ⚡ Boot Icon Box (rounded-2xl)
-                  className="w-20 h-20 sm:w-28 sm:h-28 mb-8 sm:mb-10 bg-[#050505] border rounded-2xl flex items-center justify-center transition-all duration-1000 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent" />
-                  {isLaunched ? (
-                    <Rocket className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-400 relative z-10" />
-                  ) : (
-                    <Activity className="w-8 h-8 sm:w-12 sm:h-12 text-indigo-400 animate-pulse relative z-10" />
-                  )}
-                </motion.div>
-
-                {/* Boot Sequence Status Box (rounded-2xl) */}
-                <div className="w-full bg-[#050505] border border-white/5 rounded-2xl p-5 sm:p-8 text-left shadow-inner relative overflow-hidden">
-                  <div className="space-y-4 sm:space-y-5 relative z-10">
-                    <BootStep active={bootStage >= 1} icon={Server} text="Initializing Core Mainframe" code="0xSYS_BOOT" />
-                    <BootStep active={bootStage >= 2} icon={Activity} text="Establishing Real-time Uplink" code="0xWSS_SYNC" />
-                    <BootStep active={bootStage >= 3} icon={ShieldCheck} text="Verifying Security Protocols" code="0xAUTH_CHK" />
-                  </div>
-
-                  {/* Dynamic Progress Bar */}
-                  <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/10">
-                    <div className="flex justify-between items-end mb-2.5 sm:mb-3">
-                      <span className="text-[9px] sm:text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Boot Progress</span>
-                      <span className="text-[10px] sm:text-xs font-black font-mono text-indigo-400">{progressPercent}%</span>
-                    </div>
-                    {/* ⚡ Progress Track (rounded-xl) */}
-                    <div className="w-full h-1.5 sm:h-2 bg-zinc-900 rounded-xl overflow-hidden border border-white/5">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${progressPercent}%` }}
-                        transition={{ duration: 0.5, ease: "easeInOut" }}
-                        className={`h-full rounded-xl shadow-[0_0_10px_currentColor] ${isLaunched ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Success Message */}
-                  <AnimatePresence>
-                    {isLaunched && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        // ⚡ Success Overlay (rounded-2xl to match parent container)
-                        className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md flex flex-col items-center justify-center z-20 rounded-2xl"
-                      >
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3">
-                          <Check className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
-                        </div>
-                        <span className="text-emerald-400 font-black uppercase tracking-[0.2em] text-xs sm:text-sm text-center px-4">
-                          Platform Launched
-                        </span>
-                        <span className="text-[8px] sm:text-[9px] font-mono text-emerald-500/70 mt-2">REDIRECTING TO MAINFRAME...</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-// Sub-component for the terminal boot steps
-function BootStep({ active, icon: Icon, text, code }: { active: boolean, icon: any, text: string, code: string }) {
-  return (
-    <div className={`flex items-center gap-3 sm:gap-4 font-mono transition-all duration-500 ${active ? 'text-zinc-200' : 'text-zinc-700'}`}>
-      {/* ⚡ Step Icon Box (rounded-xl) */}
-      <div className={`p-1.5 sm:p-2 rounded-xl border ${active ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' : 'bg-white/5 border-white/5 text-zinc-700'}`}>
-        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-      </div>
-      <div className="flex-1 flex flex-col">
-        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider">{text}</span>
-        <span className={`text-[7px] sm:text-[8px] mt-0.5 tracking-widest ${active ? 'text-indigo-500/70' : 'text-zinc-800'}`}>[{code}]</span>
-      </div>
-      <span className={`text-[9px] sm:text-[10px] font-black tracking-widest ${active ? 'text-emerald-400' : 'text-zinc-800'}`}>
-        {active ? 'OK' : 'WAIT'}
-      </span>
-    </div>
+    </>
   );
 }
