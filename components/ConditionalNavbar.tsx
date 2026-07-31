@@ -59,7 +59,7 @@ export default function Navbar() {
     pathname.startsWith("/admin") ||
     pathname.startsWith("/judge") ||
     pathname.startsWith("/media") ||
-    pathname.startsWith("/launch") 
+    pathname.startsWith("/launch")
   ) {
     return null;
   }
