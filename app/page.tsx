@@ -6,11 +6,11 @@ import Link from "next/link";
 import { TypeAnimation } from "react-type-animation";
 import {
   Trophy,
+  Medal,
+  Award,
   Zap,
   TrendingUp,
-  Award,
   Rocket,
-  Crown,
   Search,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -160,7 +160,8 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-2xl shadow-2xl relative overflow-hidden backdrop-blur-xl"
+          // ⚡ MASSIVE BORDER RADIUS (rounded-[3rem])
+          className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl relative overflow-hidden backdrop-blur-xl"
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
@@ -171,7 +172,8 @@ export default function Home() {
             transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 20 }}
             className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mb-4 md:mb-6 relative z-10"
           >
-            <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 cursor-pointer">
+            {/* ⚡ Deep squircle logo (rounded-[2rem]) */}
+            <div className="w-full h-full rounded-[1.5rem] md:rounded-[2rem] bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 cursor-pointer">
               <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
                 Drop<br/>Logo
               </span>
@@ -184,7 +186,8 @@ export default function Home() {
             transition={{ delay: 0.4 }}
             className="flex items-center justify-center relative z-10 mb-2"
           >
-            <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+            {/* ⚡ High radius badge (rounded-2xl) */}
+            <div className="flex items-center gap-2 px-5 py-2 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -225,9 +228,10 @@ export default function Home() {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="w-full sm:w-auto"
             >
+              {/* ⚡ Squircle Button (rounded-[1.5rem]) */}
               <Link
                 href="#leaderboard"
-                className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
+                className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[56px] w-full sm:w-auto justify-center rounded-[1.5rem] hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
               >
                 <TrendingUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" /> Live Leaderboard
               </Link>
@@ -238,9 +242,10 @@ export default function Home() {
               transition={{ delay: 0.6, duration: 0.5 }}
               className="w-full sm:w-auto"
             >
+              {/* ⚡ Squircle Button (rounded-[1.5rem]) */}
               <Link
                 href="/search"
-                className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
+                className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[56px] w-full sm:w-auto justify-center rounded-[1.5rem] hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
               >
                 <Search className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Find Participant
               </Link>
@@ -250,10 +255,12 @@ export default function Home() {
 
         {/* --- 2. LIVE COUNTDOWN --- */}
         <motion.section {...scrollAnimation} className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-2xl blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
-          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-2xl p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl">
+          {/* ⚡ Massive Container Radius */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-[2.5rem] md:rounded-[3.5rem] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
+          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-[2.5rem] md:rounded-[3.5rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl">
             <div className="flex flex-col items-center">
-              <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
+              {/* ⚡ Squircle Badge */}
+              <span className="flex items-center gap-2 px-5 py-2 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
                 <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result Declaration
               </span>
               <Countdown targetDate="2026-09-23T19:00:00" />
@@ -277,20 +284,20 @@ export default function Home() {
         <motion.section {...scrollAnimation} id="leaderboard" className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
           
           {/* 🟢 GENERAL CHAMPIONSHIP */}
-          <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-2xl shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
+          {/* ⚡ Massive Container Radius */}
+          <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-indigo-500/5 blur-[100px] pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-1000" />
 
             <div className="flex items-center justify-between mb-6 md:mb-10 relative z-10">
               <div className="flex items-center gap-3 md:gap-4">
-                <div className="p-2.5 md:p-3 bg-black/50 border border-white/10 rounded-xl shadow-inner shrink-0">
+                <div className="p-3 md:p-4 bg-black/50 border border-white/10 rounded-2xl shadow-inner shrink-0">
                   <Trophy className="text-yellow-500 w-5 h-5 md:w-8 md:h-8" />
                 </div>
                 <div>
                   <h3 className="text-xl sm:text-3xl md:text-4xl font-black tracking-tighter text-white leading-none">
                     General Championship
                   </h3>
-                  {/* ⚡ MATCHED SUBTITLE TO IMAGE */}
-                  <p className="text-[9px] md:text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">
+                  <p className="text-[9px] md:text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1.5">
                     Main Event Leaderboard
                   </p>
                 </div>
@@ -301,12 +308,11 @@ export default function Home() {
               {loading ? (
                 <div className="animate-pulse space-y-4">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-xl w-full" />
+                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-3xl w-full" />
                   ))}
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
-                  {/* ⚡ EXACT MATCH TO LEADERBOARD PAGE UI */}
                   {rankedGeneral.map((team: any, index: number) => {
                     const animationKey = team.id || team.name || team.team || index;
                     const isFirst = team.rank === 1;
@@ -324,7 +330,8 @@ export default function Home() {
                           damping: 30,
                           delay: index * 0.05 
                         }}
-                        className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-8 rounded-[2rem] border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
+                        // ⚡ Deep Squircle Cards
+                        className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-8 rounded-[2rem] md:rounded-[2.5rem] border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
                           isFirst
                             ? "bg-[#0a0a0a] shadow-2xl z-20"
                             : "bg-black/40 border-white/5 hover:bg-white/[0.02] z-10"
@@ -334,7 +341,7 @@ export default function Home() {
                           boxShadow: isFirst ? `0 0 40px ${team.color}25` : undefined,
                         }}
                       >
-                        {/* ⚡ LEFT ACCENT LINE */}
+                        {/* LEFT ACCENT LINE */}
                         <div
                           className="absolute left-0 top-0 bottom-0 w-1.5 md:w-2 opacity-90"
                           style={{ backgroundColor: team.color }}
@@ -342,9 +349,9 @@ export default function Home() {
 
                         <div className="flex items-center gap-4 md:gap-6 mb-4 sm:mb-0 pl-2 w-full sm:w-auto">
                           
-                          {/* ⚡ PERFECT CROWN/RANK BADGE (Matches Team Color) */}
+                          {/* ⚡ High radius Rank Box */}
                           <div
-                            className="w-12 h-12 md:w-14 md:h-14 flex flex-col items-center justify-center rounded-[1rem] md:rounded-2xl font-black text-lg md:text-xl shadow-inner shrink-0 leading-none"
+                            className="w-12 h-12 md:w-16 md:h-16 flex flex-col items-center justify-center rounded-2xl md:rounded-[1.25rem] font-black text-lg md:text-xl shadow-inner shrink-0 leading-none"
                             style={{
                               backgroundColor: isFirst ? team.color : "#18181b",
                               color: isFirst ? "#fff" : team.color,
@@ -354,7 +361,7 @@ export default function Home() {
                               <>
                                 <Crown className="w-5 h-5 md:w-6 md:h-6" />
                                 {team.isTie && (
-                                  <span className="text-[6px] md:text-[7px] uppercase tracking-widest mt-0.5 opacity-80 leading-none">
+                                  <span className="text-[6px] md:text-[7px] uppercase tracking-widest mt-1 opacity-90 leading-none">
                                     Tie
                                   </span>
                                 )}
@@ -371,10 +378,9 @@ export default function Home() {
                             )}
                           </div>
 
-                          {/* ⚡ BOLD TITLE WITHOUT CONTENDER SUBTITLE */}
                           <div className="truncate">
                             <h3
-                              className={`text-xl md:text-2xl font-bold tracking-tight uppercase truncate ${
+                              className={`text-xl md:text-3xl font-bold tracking-tight uppercase truncate ${
                                 isFirst ? "text-white" : "text-zinc-300"
                               }`}
                             >
@@ -383,7 +389,6 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* ⚡ TOTAL POINTS (Matches Leaderboard Text) */}
                         <div className="w-full sm:w-auto text-center sm:text-right shrink-0">
                           <motion.div
                             key={team.total_points}
@@ -409,12 +414,14 @@ export default function Home() {
           </div>
 
           {/* 🟣 HIFZ SPECIAL CATEGORY */}
-          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group">
+          {/* ⚡ Massive Container Radius */}
+          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group">
             <Zap className="absolute -top-10 -right-10 w-40 h-40 text-indigo-500/10 rotate-12 pointer-events-none group-hover:text-indigo-500/20 transition-colors duration-700" />
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-indigo-900/20 to-transparent pointer-events-none" />
 
             <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3 text-indigo-400 border border-indigo-500/20 bg-indigo-500/10 w-fit px-3 py-1.5 rounded-lg shadow-inner">
+              {/* ⚡ Squircle Badge */}
+              <div className="flex items-center gap-2 mb-4 text-indigo-400 border border-indigo-500/20 bg-indigo-500/10 w-fit px-4 py-2 rounded-2xl shadow-inner">
                 <Zap className="w-3 h-3 fill-current" />
                 <span className="font-black uppercase tracking-widest text-[8px] md:text-[9px]">
                   Special Category
@@ -427,7 +434,7 @@ export default function Home() {
 
             <div className="h-[200px] sm:h-[260px] md:h-[280px] mt-6 md:mt-8 relative z-10 flex items-center justify-center">
               {loading ? (
-                <div className="animate-pulse w-32 h-32 md:w-48 md:h-48 bg-indigo-900/30 rounded-full border-4 border-indigo-500/10"></div>
+                <div className="animate-pulse w-32 h-32 md:w-48 md:h-48 bg-indigo-900/30 rounded-3xl border-4 border-indigo-500/10"></div>
               ) : (
                 <TeamChart data={rankedHifz} type="pie" isDark={true} />
               )}
@@ -441,11 +448,12 @@ export default function Home() {
                 return (
                   <div
                     key={team.id || team.team}
-                    className="bg-black/40 border p-3 rounded-xl text-center relative overflow-hidden transition-all hover:bg-white/5"
+                    // ⚡ Deep Squircle Cards
+                    className="bg-black/40 border p-4 rounded-3xl text-center relative overflow-hidden transition-all hover:bg-white/5"
                     style={{ borderColor: team.color }}
                   >
                     {isFirst && team.isTie && (
-                      <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[5px] font-black uppercase px-1.5 py-0.5 rounded-bl-md z-20 shadow-md">
+                      <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[5px] font-black uppercase px-2 py-1 rounded-bl-xl z-20 shadow-md">
                         Tie
                       </div>
                     )}
@@ -455,7 +463,7 @@ export default function Home() {
                     >
                       {team.name || team.team}
                     </p>
-                    <p className="text-lg md:text-xl font-black text-white mt-0.5">
+                    <p className="text-xl md:text-2xl font-black text-white mt-1">
                       {team.total_points}{" "}
                       <span className="text-[8px] text-zinc-600 uppercase">
                         Pts
@@ -471,7 +479,8 @@ export default function Home() {
         {/* --- 5. LOGIC-LOCKED TEAM COMPARISON --- */}
         <motion.section {...scrollAnimation}>
           <div className="mb-6 md:mb-12 text-center md:text-left px-2">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
+            {/* ⚡ Squircle Badge */}
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-2xl bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-4 border border-white/10 shadow-inner">
               <TrendingUp className="w-3 h-3 text-indigo-400" /> Data Intelligence
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white uppercase">
@@ -483,10 +492,11 @@ export default function Home() {
 
         {/* --- 6. CATEGORY TOPPERS (Hall of Fame) --- */}
         <motion.section {...scrollAnimation} id="toppers" className="relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-yellow-500/5 blur-[120px] pointer-events-none rounded-[100%]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-yellow-500/5 blur-[120px] pointer-events-none rounded-[3rem]" />
 
           <div className="text-center mb-8 md:mb-16 relative z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-black/80 border border-yellow-500/20 text-yellow-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] mb-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
+            {/* ⚡ Squircle Badge */}
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-2xl bg-black/80 border border-yellow-500/20 text-yellow-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] mb-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
               <Award className="w-3 h-3 md:w-4 md:h-4" /> Hall of Fame
             </div>
             <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white uppercase px-2">
@@ -499,7 +509,7 @@ export default function Home() {
 
           <div className="relative z-10">
             {loading ? (
-              <div className="h-64 animate-pulse bg-zinc-900/30 border border-white/5 rounded-2xl backdrop-blur-xl"></div>
+              <div className="h-64 animate-pulse bg-zinc-900/30 border border-white/5 rounded-[3rem] backdrop-blur-xl"></div>
             ) : (
               <CategoryToppers toppers={data.toppers} />
             )}
