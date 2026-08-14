@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { Trophy, Loader2, Users, User, Mic, PenTool, Award, Zap, Search, X, Download } from "lucide-react";
+import { Trophy, Loader2, Users, User, Mic, PenTool, Award, Zap, Search, X, Download, ShieldAlert } from "lucide-react";
 
 // --- DEEP RELATIONAL TYPES ---
 type Result = {
@@ -17,7 +17,7 @@ type Result = {
 
 type EventWithResults = {
   id: string;
-  event_code: string; // ⚡ FIXED: Matched to your SQL schema (event_code)
+  event_code: string; 
   name: string;
   category: string;
   event_type: string;
@@ -53,18 +53,15 @@ function isFuzzyMatch(query: string, target: string): boolean {
   if (!q) return true;
   if (t.includes(q)) return true; // Direct match
 
-  // Subsequence match (e.g. "sg" matches "Singing")
   let qIdx = 0;
   for (let i = 0; i < t.length; i++) {
     if (t[i] === q[qIdx]) qIdx++;
     if (qIdx === q.length) return true;
   }
 
-  // Typo tolerance (Levenshtein) for longer words
   if (q.length > 3) {
     const targetWords = t.split(/[\s\-]+/);
     for (const word of targetWords) {
-      // Allow 1 typo for 4-5 letter words, 2 typos for 6+ letters
       const maxTypos = q.length > 5 ? 2 : 1;
       if (levenshteinDistance(q, word) <= maxTypos) return true;
     }
@@ -78,10 +75,10 @@ function isFuzzyMatch(query: string, target: string): boolean {
 export default function CategorizedResultsBoard() {
   const [events, setEvents] = useState<EventWithResults[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null); // ⚡ ADDED ERROR STATE
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ⚡ Power User Hotkey (Cmd/Ctrl + K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -103,37 +100,47 @@ export default function CategorizedResultsBoard() {
   }, []);
 
   const fetchEventResults = async () => {
-    // ⚡ FIXED: Now querying "event_code" as defined in your DB
-    const { data, error } = await supabase
-      .from("events")
-      .select(`id, event_code, name, category, event_type, event_mode, results (id, points, grade, position, status, participants ( name, teams ( name, color ) ), teams ( name, color ))`)
-      .order("name", { ascending: true });
+    try {
+      // Clear any previous errors
+      setErrorMsg(null);
 
-    if (error) {
-      console.error("Supabase Database Error:", error.message);
-      setLoading(false); 
-      return; 
+      const { data, error } = await supabase
+        .from("events")
+        .select(`id, event_code, name, category, event_type, event_mode, results (id, points, grade, position, status, participants ( name, teams ( name, color ) ), teams ( name, color ))`)
+        .order("name", { ascending: true });
+
+      if (error) {
+        throw new Error(error.message); // Trigger catch block
+      }
+
+      // ⚡ BULLETPROOF DATA PARSING: Prevent .map() and .filter() from crashing
+      const safeData = data || []; 
+      
+      const processedEvents = safeData
+        .map((evt: any) => ({
+          ...evt,
+          // Ensure results is an array before calling filter
+          results: (Array.isArray(evt.results) ? evt.results : []).filter((r: any) => r.status === "approved"),
+        }))
+        .filter((evt: any) => evt.results.length > 0);
+
+      setEvents(processedEvents);
+      if (processedEvents.length > 0) {
+        const categories = Array.from(new Set(processedEvents.map((e) => e.category)));
+        setActiveCategory((prev) => categories.includes(prev as string) ? prev : categories[0] as string);
+      }
+      
+    } catch (err: any) {
+      console.error("Critical Fetch Error:", err);
+      setErrorMsg(err.message || "An unknown error occurred while fetching data.");
+    } finally {
+      // ⚡ FINALLY BLOCK: Guarantees the loading spinner ALWAYS turns off
+      setLoading(false);
     }
-
-    const processedEvents = (data as unknown as EventWithResults[])
-      .map((evt) => ({
-        ...evt,
-        results: (evt.results || []).filter((r) => r.status === "approved"),
-      }))
-      .filter((evt) => evt.results.length > 0);
-
-    setEvents(processedEvents);
-    if (processedEvents.length > 0) {
-      const categories = Array.from(new Set(processedEvents.map((e) => e.category)));
-      setActiveCategory((prev) => categories.includes(prev) ? prev : categories[0]);
-    }
-    
-    setLoading(false);
   };
 
   const availableCategories = useMemo(() => Array.from(new Set(events.map((e) => e.category))).sort(), [events]);
   
-  // ⚡ SMART FILTER ENGINE (Handles Categories + Event Codes + Fuzzy Search)
   const displayedEvents = useMemo(() => {
     let filtered = events.filter((e) => e.category === activeCategory);
 
@@ -141,22 +148,19 @@ export default function CategorizedResultsBoard() {
       const q = searchQuery.toLowerCase().trim();
       
       filtered = filtered.map(event => {
-        // ⚡ CHECK FOR EXACT/PARTIAL EVENT CODE MATCH
         const matchesCode = event.event_code && String(event.event_code).toLowerCase().includes(q);
 
-        // If Event Name OR Event Code matches the search, show ALL results inside it
         if (matchesCode || isFuzzyMatch(searchQuery, event.name)) {
           return event;
         }
 
-        // If the Event doesn't match, filter the results to only show participants that match
         const matchingResults = event.results.filter(r => {
           const { name, team } = extractData(r);
           return isFuzzyMatch(searchQuery, name) || isFuzzyMatch(searchQuery, team);
         });
 
         return { ...event, results: matchingResults };
-      }).filter(event => event.results.length > 0); // Drop events that have 0 matches
+      }).filter(event => event.results.length > 0); 
     }
 
     return filtered;
@@ -170,6 +174,25 @@ export default function CategorizedResultsBoard() {
       return b.points - a.points;
     });
   };
+
+  // ⚡ NEW ERROR CRASH SCREEN
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="bg-red-500/10 border border-red-500/50 p-8 rounded-3xl max-w-lg w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.2)] backdrop-blur-xl relative z-10">
+          <ShieldAlert className="w-16 h-16 mx-auto mb-6 text-red-500" />
+          <h2 className="text-2xl font-black text-red-400 mb-2 uppercase tracking-widest">Database Error</h2>
+          <p className="text-red-200/80 font-mono text-sm mb-6">{errorMsg}</p>
+          <button 
+            onClick={() => { setLoading(true); fetchEventResults(); }}
+            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -286,7 +309,6 @@ export default function CategorizedResultsBoard() {
                     >
                       <div className="p-5 md:p-6 pb-4 md:pb-5 border-b border-white/[0.05] mb-2 md:mb-3 relative overflow-hidden">
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight mb-4 md:mb-5 group-hover:text-indigo-100 transition-colors relative z-10 drop-shadow-md">
-                          {/* ⚡ DISPLAY EVENT CODE DIRECTLY ON THE CARD */}
                           {event.event_code && <span className="text-indigo-500/80 mr-2 md:mr-3 font-mono">#{event.event_code}</span>}
                           {event.name}
                         </h2>
