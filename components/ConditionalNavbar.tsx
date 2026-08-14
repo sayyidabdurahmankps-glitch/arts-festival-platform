@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase"; // ⚡ Added Supabase import
+import { supabase } from "@/lib/supabase";
 import {
   Menu,
   X,
@@ -19,10 +19,9 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null); // ⚡ Added state for the dynamic logo
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const pathname = usePathname();
 
-  // ⚡ Fetch the dynamic logo from Supabase
   useEffect(() => {
     const fetchLogo = async () => {
       const { data } = await supabase
@@ -39,14 +38,12 @@ export default function Navbar() {
     fetchLogo();
   }, []);
 
-  // Detect scroll to add background opacity
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -58,7 +55,6 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
-  // Close menu automatically on route change
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
@@ -71,7 +67,6 @@ export default function Navbar() {
     { name: "Gallery", href: "/gallery", icon: ImageIcon },
   ];
 
-  // ⚡ BULLETPROOF ROUTE CHECK: Uses optional chaining to prevent Vercel build crashes
   if (
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/judge") ||
@@ -92,22 +87,22 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-16 md:h-20">
-            {/* 🟢 DYNAMIC ESSENZA LOGO */}
+            
+            {/* 🟢 PERFECTLY ALIGNED BRANDING (Logo + Text) */}
             <Link
               href="/"
-              className="text-2xl font-black text-white tracking-tighter flex items-center gap-2 relative z-50 uppercase"
+              className="flex items-center gap-3 relative z-50 group"
             >
-              {logoUrl ? (
+              {logoUrl && (
                 <img 
                   src={logoUrl} 
                   alt="Essenza Logo" 
-                  className="h-8 md:h-10 w-auto object-contain" 
+                  className="h-8 md:h-10 w-auto object-contain group-hover:scale-105 transition-transform duration-300 shrink-0" 
                 />
-              ) : (
-                <>
-                  Essen<span className="text-indigo-500">za</span>
-                </>
               )}
+              <span className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase leading-none pt-0.5">
+                Essen<span className="text-indigo-500">za</span>
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -118,7 +113,7 @@ export default function Navbar() {
                   <Link
                     key={link.name}
                     href={link.href}
-                    className={`font-semibold transition-all hover:text-indigo-400 ${
+                    className={`font-semibold transition-all hover:text-indigo-400 flex items-center ${
                       isActive ? "text-indigo-500" : "text-zinc-400"
                     }`}
                   >
@@ -129,7 +124,7 @@ export default function Navbar() {
 
               <Link
                 href="/live"
-                className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-sm font-bold tracking-widest uppercase"
+                className="flex items-center justify-center gap-2 px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-sm font-bold tracking-widest uppercase"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
@@ -140,10 +135,10 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Menu Toggle */}
-            <div className="md:hidden relative z-50">
+            <div className="md:hidden relative z-50 flex items-center">
               <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="text-zinc-400 hover:text-white transition-colors p-2 -mr-2 bg-white/5 rounded-xl border border-white/10"
+                className="text-zinc-400 hover:text-white transition-colors p-2 -mr-2 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center"
               >
                 {isOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -185,7 +180,7 @@ export default function Navbar() {
                     >
                       <div className="flex items-center gap-4">
                         <div
-                          className={`p-2 rounded-xl ${
+                          className={`p-2 rounded-xl flex items-center justify-center ${
                             isActive ? "bg-indigo-500/20" : "bg-black/50"
                           }`}
                         >
@@ -195,7 +190,7 @@ export default function Navbar() {
                             }`}
                           />
                         </div>
-                        <span className="text-lg font-black tracking-tight">
+                        <span className="text-lg font-black tracking-tight leading-none pt-0.5">
                           {link.name}
                         </span>
                       </div>
@@ -225,7 +220,7 @@ export default function Navbar() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
                 </span>
-                <span className="font-black uppercase tracking-widest max-sm:hidden text-sm">
+                <span className="font-black uppercase tracking-widest max-sm:hidden text-sm leading-none pt-0.5">
                   Enter Live Feed
                 </span>
               </Link>
