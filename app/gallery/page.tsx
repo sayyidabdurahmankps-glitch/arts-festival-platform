@@ -3,13 +3,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Camera, Compass } from "lucide-react";
-import { Anek_Malayalam } from "next/font/google"; // <--- ⚡ IMPORT FONT
-
-// ⚡ INIT ANEK MALAYALAM FONT (Extra Bold)
-const malayalamFont = Anek_Malayalam({
-  subsets: ["malayalam"],
-  weight: ["400", "500", "700", "800"],
-});
 
 type GalleryAsset = {
   id: string;
@@ -119,8 +112,7 @@ export default function LiveBentoGallery() {
                   </div>
 
                   <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 lg:translate-y-2 lg:group-hover:translate-y-0 transition-transform duration-500">
-                    {/* ⚡ ANEK MALAYALAM EXTRABOLD FONT APPLIED BELOW */}
-                    <h3 className={`font-extrabold uppercase italic tracking-tighter leading-none text-white drop-shadow-xl ${malayalamFont.className} ${isLarge ? 'text-2xl md:text-4xl' : 'text-lg md:text-2xl'}`}>
+                    <h3 className={`font-extrabold uppercase italic tracking-tighter leading-none text-white drop-shadow-xl ${isLarge ? 'text-2xl md:text-4xl' : 'text-lg md:text-2xl'}`}>
                       {item.title || "Untitled"}
                     </h3>
                     <p className="text-[9px] md:text-[10px] font-mono text-zinc-400 uppercase tracking-widest mt-1.5 md:mt-2 flex items-center gap-1.5">
