@@ -31,11 +31,12 @@ export default function Home() {
     hifz: [],
     compStats: [],
     toppers: [],
+    logoUrl: null, // ⚡ Added state for the dynamic logo
     stats: { participants: 0, events: 0, hifz: 0, points: 0 },
   });
 
   const fetchAllData = async () => {
-    const [generalRes, hifzRes, compRes, toppersRes, pCount, eCount, pSum] =
+    const [generalRes, hifzRes, compRes, toppersRes, pCount, eCount, pSum, logoRes] =
       await Promise.all([
         supabase
           .from("team_leaderboard")
@@ -54,6 +55,8 @@ export default function Home() {
           .select("*", { count: "exact", head: true }),
         supabase.from("events").select("*", { count: "exact", head: true }),
         supabase.from("results").select("points").eq("status", "approved"),
+        // ⚡ Safely fetch the dynamic logo from the new settings table
+        supabase.from("settings").select("value").eq("key", "logo_url").maybeSingle().catch(() => ({ data: null })),
       ]);
 
     setData({
@@ -61,6 +64,7 @@ export default function Home() {
       hifz: hifzRes.data || [],
       compStats: compRes.data || [],
       toppers: toppersRes.data || [],
+      logoUrl: logoRes?.data?.value || null, // ⚡ Store the logo URL
       stats: {
         participants: pCount.count || 0,
         events: eCount.count || 0,
@@ -164,25 +168,29 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
           animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          // ⚡ Strict Squircle (rounded-[2rem])
           className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-[2rem] shadow-2xl relative overflow-hidden backdrop-blur-xl"
         >
           <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
-          {/* 🟢 FEST LOGO PLACEHOLDER */}
+          {/* 🟢 DYNAMIC ESSENZA LOGO */}
           <motion.div
             initial={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mb-4 md:mb-6 relative z-10"
           >
-            {/* ⚡ Inner Box (rounded-2xl) */}
-            <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 cursor-pointer">
-              <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
-                Drop
-                <br />
-                Logo
-              </span>
+            <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 overflow-hidden cursor-pointer">
+              {data.logoUrl ? (
+                <img 
+                  src={data.logoUrl} 
+                  alt="Essenza Logo" 
+                  className="w-full h-full object-contain p-2 md:p-3 group-hover:scale-110 transition-transform duration-700" 
+                />
+              ) : (
+                <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
+                  Essenza<br />Logo
+                </span>
+              )}
             </div>
           </motion.div>
 
@@ -192,7 +200,6 @@ export default function Home() {
             transition={{ delay: 0.6, duration: 0.8 }}
             className="flex items-center justify-center relative z-10 mb-2"
           >
-            {/* ⚡ Badge (rounded-xl) */}
             <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -204,8 +211,12 @@ export default function Home() {
             </div>
           </motion.div>
 
-          <div className="flex items-center justify-center min-h-[60px] md:min-h-[120px] w-full relative z-10 px-2">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 drop-shadow-sm">
+          {/* ⚡ MASSIVE ESSENZA HEADER */}
+          <div className="flex flex-col items-center justify-center min-h-[80px] md:min-h-[140px] w-full relative z-10 px-2 space-y-2">
+            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[9rem] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 drop-shadow-lg uppercase leading-none">
+              Essenza
+            </h1>
+            <div className="text-sm sm:text-lg md:text-2xl font-black tracking-[0.3em] md:tracking-[0.5em] text-indigo-400 uppercase h-8">
               <TypeAnimation
                 sequence={[
                   "SYNERGY.",
@@ -219,14 +230,14 @@ export default function Home() {
                 speed={50}
                 repeat={0}
               />
-            </h1>
+            </div>
           </div>
 
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 1 }}
-            className="text-sm sm:text-base md:text-xl leading-relaxed text-zinc-400 max-w-2xl mx-auto px-6 relative z-10 font-medium"
+            className="text-sm sm:text-base md:text-xl leading-relaxed text-zinc-400 max-w-2xl mx-auto px-6 relative z-10 font-medium pt-2 md:pt-4"
           >
             The ultimate battle of minds. Track live scores, view schedules, and
             cheer for your favorite teams in real-time.
@@ -239,7 +250,6 @@ export default function Home() {
               transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
               className="w-full sm:w-auto"
             >
-              {/* ⚡ Button (rounded-xl) */}
               <Link
                 href="#leaderboard"
                 className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
@@ -254,7 +264,6 @@ export default function Home() {
               transition={{ delay: 1, duration: 0.7, ease: "easeOut" }}
               className="w-full sm:w-auto"
             >
-              {/* ⚡ Button (rounded-xl) */}
               <Link
                 href="/search"
                 className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
@@ -268,11 +277,9 @@ export default function Home() {
 
         {/* --- 2. LIVE COUNTDOWN --- */}
         <motion.section {...scrollAnimation} className="relative group">
-          {/* ⚡ Strict Squircle (rounded-[2rem]) */}
           <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
           <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-[2rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl transition-transform duration-700 hover:scale-[1.01]">
             <div className="flex flex-col items-center">
-              {/* ⚡ Badge (rounded-xl) */}
               <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
                 <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result
                 Declaration
@@ -301,7 +308,6 @@ export default function Home() {
           className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8"
         >
           {/* 🟢 GENERAL CHAMPIONSHIP */}
-          {/* ⚡ Strict Squircle (rounded-[2rem]) */}
           <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-indigo-500/5 blur-[100px] pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-1000" />
 
@@ -351,7 +357,6 @@ export default function Home() {
                           damping: 30,
                           delay: index * 0.1, // Staggered entrance
                         }}
-                        // ⚡ Inner Card (rounded-2xl)
                         className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 md:p-8 rounded-2xl border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
                           isFirst
                             ? "bg-[#0a0a0a] shadow-2xl z-20 hover:scale-[1.02] duration-300"
@@ -370,7 +375,6 @@ export default function Home() {
                         />
 
                         <div className="flex items-center gap-4 md:gap-6 pl-2 sm:pl-3 w-full sm:w-auto">
-                          {/* ⚡ Rank Badge (rounded-xl) */}
                           <div
                             className="w-12 h-12 md:w-14 md:h-14 flex flex-col items-center justify-center rounded-xl font-black text-lg md:text-xl shadow-inner shrink-0 leading-none"
                             style={{
@@ -413,7 +417,6 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* Mobile Optimized Point Stacking */}
                         <div className="w-full sm:w-auto flex items-center justify-between sm:block border-t border-white/5 pt-3 mt-1 sm:border-0 sm:pt-0 sm:mt-0 sm:text-right shrink-0">
                           <p className="sm:hidden text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">
                             Total Points
@@ -444,13 +447,11 @@ export default function Home() {
           </div>
 
           {/* 🟣 HIFZ SPECIAL CATEGORY */}
-          {/* ⚡ Strict Squircle (rounded-[2rem]) */}
           <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group hover:border-indigo-500/40 transition-colors duration-500">
             <Zap className="absolute -top-10 -right-10 w-40 h-40 text-indigo-500/10 rotate-12 pointer-events-none group-hover:text-indigo-500/20 transition-colors duration-700 group-hover:scale-110 group-hover:rotate-[24deg]" />
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-indigo-900/20 to-transparent pointer-events-none" />
 
             <div className="relative z-10">
-              {/* ⚡ Badge (rounded-xl) */}
               <div className="flex items-center gap-2 mb-3 text-indigo-400 border border-indigo-500/20 bg-indigo-500/10 w-fit px-4 py-1.5 rounded-xl shadow-inner">
                 <Zap className="w-3 h-3 fill-current" />
                 <span className="font-black uppercase tracking-widest text-[8px] md:text-[9px]">
@@ -471,14 +472,12 @@ export default function Home() {
             </div>
 
             <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 md:gap-4">
-              {/* ⚡ MAP OVER RANKED HIFZ DATA */}
               {rankedHifz.slice(0, 2).map((team: any) => {
                 const isFirst = team.rank === 1;
 
                 return (
                   <div
                     key={team.id || team.team}
-                    // ⚡ Inner Card (rounded-2xl)
                     className="bg-black/40 border p-4 rounded-2xl text-center relative overflow-hidden transition-all hover:bg-white/5 hover:scale-105 duration-300"
                     style={{ borderColor: team.color }}
                   >
@@ -509,7 +508,6 @@ export default function Home() {
         {/* --- 5. LOGIC-LOCKED TEAM COMPARISON --- */}
         <motion.section {...scrollAnimation}>
           <div className="mb-6 md:mb-12 text-center md:text-left px-2">
-            {/* ⚡ Badge (rounded-xl) */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
               <TrendingUp className="w-3 h-3 text-indigo-400" /> Data
               Intelligence
@@ -526,7 +524,6 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-yellow-500/5 blur-[120px] pointer-events-none rounded-[2rem]" />
 
           <div className="text-center mb-8 md:mb-16 relative z-10">
-            {/* ⚡ Badge (rounded-xl) */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black/80 border border-yellow-500/20 text-yellow-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] mb-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
               <Award className="w-3 h-3 md:w-4 md:h-4" /> Hall of Fame
             </div>
