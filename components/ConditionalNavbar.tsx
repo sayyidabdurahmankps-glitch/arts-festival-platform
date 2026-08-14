@@ -101,7 +101,7 @@ export default function Navbar() {
                 />
               )}
               <span className="text-2xl md:text-3xl font-black text-white tracking-tighter uppercase leading-none pt-0.5">
-                Essen<span className="text-indigo-500">za</span>
+                Essenza
               </span>
             </Link>
 
