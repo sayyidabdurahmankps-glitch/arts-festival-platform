@@ -88,7 +88,7 @@ export default function Home() {
         },
         () => {
           fetchAllData();
-        },
+        }
       )
       .subscribe();
 
@@ -99,7 +99,7 @@ export default function Home() {
         { event: "*", schema: "public", table: "teams" },
         () => {
           fetchAllData();
-        },
+        }
       )
       .subscribe();
 
@@ -117,7 +117,7 @@ export default function Home() {
     let prevPoints: number | null = null;
 
     const sorted = [...teams].sort(
-      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0),
+      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0)
     );
 
     const ranked = sorted.map((team) => {
@@ -140,11 +140,12 @@ export default function Home() {
   const rankedGeneral = useMemo(() => rankTeams(data.general), [data.general]);
   const rankedHifz = useMemo(() => rankTeams(data.hifz), [data.hifz]);
 
+  // ⚡ PREMIUM SCROLL ANIMATION CONFIG (Blur + Scale + Fluid Spring)
   const scrollAnimation: any = {
-    initial: { opacity: 0, y: 40 },
-    whileInView: { opacity: 1, y: 0 },
+    initial: { opacity: 0, y: 60, scale: 0.95, filter: "blur(15px)" },
+    whileInView: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
     viewport: { once: true, margin: "-50px" },
-    transition: { duration: 0.6, ease: "easeOut" },
+    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] }, // Apple-style smooth ease
   };
 
   return (
@@ -156,12 +157,13 @@ export default function Home() {
       {/* Architectural Grid Background */}
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
-      <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-16 md:space-y-28 w-full px-4 sm:px-6 pb-28 md:pb-20 relative z-10">
+      <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-20 md:space-y-32 w-full px-4 sm:px-6 pb-36 md:pb-20 relative z-10">
+        
         {/* --- 1. HERO SECTION --- */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
+          animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           // ⚡ Strict Squircle (rounded-[2rem])
           className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-[2rem] shadow-2xl relative overflow-hidden backdrop-blur-xl"
         >
@@ -169,14 +171,9 @@ export default function Home() {
 
           {/* 🟢 FEST LOGO PLACEHOLDER */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              delay: 0.3,
-              type: "spring",
-              stiffness: 200,
-              damping: 20,
-            }}
+            initial={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mb-4 md:mb-6 relative z-10"
           >
             {/* ⚡ Inner Box (rounded-2xl) */}
@@ -192,7 +189,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.6, duration: 0.8 }}
             className="flex items-center justify-center relative z-10 mb-2"
           >
             {/* ⚡ Badge (rounded-xl) */}
@@ -225,16 +222,21 @@ export default function Home() {
             </h1>
           </div>
 
-          <p className="text-sm sm:text-base md:text-xl leading-relaxed text-zinc-400 max-w-2xl mx-auto px-6 relative z-10 font-medium">
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 1 }}
+            className="text-sm sm:text-base md:text-xl leading-relaxed text-zinc-400 max-w-2xl mx-auto px-6 relative z-10 font-medium"
+          >
             The ultimate battle of minds. Track live scores, view schedules, and
             cheer for your favorite teams in real-time.
-          </p>
+          </motion.p>
 
           <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4 md:pt-8 px-6 relative z-10">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
+              initial={{ opacity: 0, x: -20, filter: "blur(10px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
               className="w-full sm:w-auto"
             >
               {/* ⚡ Button (rounded-xl) */}
@@ -247,9 +249,9 @@ export default function Home() {
               </Link>
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6, duration: 0.5 }}
+              initial={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              transition={{ delay: 1, duration: 0.7, ease: "easeOut" }}
               className="w-full sm:w-auto"
             >
               {/* ⚡ Button (rounded-xl) */}
@@ -268,7 +270,7 @@ export default function Home() {
         <motion.section {...scrollAnimation} className="relative group">
           {/* ⚡ Strict Squircle (rounded-[2rem]) */}
           <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
-          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-[2rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl">
+          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-[2rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl transition-transform duration-700 hover:scale-[1.01]">
             <div className="flex flex-col items-center">
               {/* ⚡ Badge (rounded-xl) */}
               <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
@@ -340,20 +342,20 @@ export default function Home() {
                       <motion.div
                         key={animationKey}
                         layout="position"
-                        initial={{ opacity: 0, scale: 0.95, x: -20 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
+                        initial={{ opacity: 0, scale: 0.9, x: -30, filter: "blur(10px)" }}
+                        animate={{ opacity: 1, scale: 1, x: 0, filter: "blur(0px)" }}
+                        exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                         transition={{
                           type: "spring",
                           stiffness: 350,
                           damping: 30,
-                          delay: index * 0.05,
+                          delay: index * 0.1, // Staggered entrance
                         }}
-                        // ⚡ Inner Card (rounded-2xl) - Optimized for Mobile Stacking
+                        // ⚡ Inner Card (rounded-2xl)
                         className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 md:p-8 rounded-2xl border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
                           isFirst
-                            ? "bg-[#0a0a0a] shadow-2xl z-20"
-                            : "bg-black/40 border-white/5 hover:bg-white/[0.02] z-10"
+                            ? "bg-[#0a0a0a] shadow-2xl z-20 hover:scale-[1.02] duration-300"
+                            : "bg-black/40 border-white/5 hover:bg-white/[0.04] z-10"
                         }`}
                         style={{
                           borderColor: team.color,
@@ -443,8 +445,8 @@ export default function Home() {
 
           {/* 🟣 HIFZ SPECIAL CATEGORY */}
           {/* ⚡ Strict Squircle (rounded-[2rem]) */}
-          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group">
-            <Zap className="absolute -top-10 -right-10 w-40 h-40 text-indigo-500/10 rotate-12 pointer-events-none group-hover:text-indigo-500/20 transition-colors duration-700" />
+          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group hover:border-indigo-500/40 transition-colors duration-500">
+            <Zap className="absolute -top-10 -right-10 w-40 h-40 text-indigo-500/10 rotate-12 pointer-events-none group-hover:text-indigo-500/20 transition-colors duration-700 group-hover:scale-110 group-hover:rotate-[24deg]" />
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-indigo-900/20 to-transparent pointer-events-none" />
 
             <div className="relative z-10">
@@ -477,7 +479,7 @@ export default function Home() {
                   <div
                     key={team.id || team.team}
                     // ⚡ Inner Card (rounded-2xl)
-                    className="bg-black/40 border p-4 rounded-2xl text-center relative overflow-hidden transition-all hover:bg-white/5"
+                    className="bg-black/40 border p-4 rounded-2xl text-center relative overflow-hidden transition-all hover:bg-white/5 hover:scale-105 duration-300"
                     style={{ borderColor: team.color }}
                   >
                     {isFirst && team.isTie && (
@@ -548,33 +550,38 @@ export default function Home() {
 
       <Footer />
 
-      {/* 📱 MOBILE ONLY: Sticky Bottom Navigation */}
-      {/* ⚡ MOBILE UI UPDATE: rounded-t-[2rem] creates the Apple card curve at the bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#050505]/95 backdrop-blur-xl border-t border-white/5 pb-safe rounded-t-[2rem] overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-around px-2 py-3">
+      {/* 📱 PREMIUM MOBILE NAVIGATION PILL (Floating Dynamic Island Style) */}
+      <div className="fixed bottom-6 left-4 right-4 z-50 md:hidden flex justify-center pointer-events-none pb-safe">
+        <div className="bg-[#0a0a0a]/80 backdrop-blur-3xl border border-white/10 p-2 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] pointer-events-auto flex items-center gap-1 w-full max-w-[340px] justify-between">
           <Link
             href="#leaderboard"
-            className="flex flex-col items-center justify-center gap-1 min-w-[72px] min-h-[48px] text-zinc-500 hover:text-indigo-400 transition-colors"
+            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-indigo-400 group"
           >
-            <Trophy className="w-5 h-5" />
+            <Trophy className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
             <span className="text-[9px] font-black uppercase tracking-widest">
               Rank
             </span>
           </Link>
+          
+          <div className="w-px h-8 bg-white/10" /> {/* Divider */}
+          
           <Link
             href="/search"
-            className="flex flex-col items-center justify-center gap-1 min-w-[72px] min-h-[48px] text-zinc-500 hover:text-indigo-400 transition-colors"
+            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-indigo-400 group"
           >
-            <Search className="w-5 h-5" />
+            <Search className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
             <span className="text-[9px] font-black uppercase tracking-widest">
               Search
             </span>
           </Link>
+          
+          <div className="w-px h-8 bg-white/10" /> {/* Divider */}
+          
           <Link
             href="#toppers"
-            className="flex flex-col items-center justify-center gap-1 min-w-[72px] min-h-[48px] text-zinc-500 hover:text-yellow-500 transition-colors"
+            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-yellow-500 group"
           >
-            <Award className="w-5 h-5" />
+            <Award className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
             <span className="text-[9px] font-black uppercase tracking-widest">
               Toppers
             </span>
