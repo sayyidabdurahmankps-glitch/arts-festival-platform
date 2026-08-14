@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { supabase } from "@/lib/supabase"; // ⚡ Added Supabase import
 import {
   Menu,
   X,
@@ -18,7 +19,25 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null); // ⚡ Added state for the dynamic logo
   const pathname = usePathname();
+
+  // ⚡ Fetch the dynamic logo from Supabase
+  useEffect(() => {
+    const fetchLogo = async () => {
+      const { data } = await supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "logo_url")
+        .maybeSingle();
+
+      if (data?.value) {
+        setLogoUrl(data.value);
+      }
+    };
+
+    fetchLogo();
+  }, []);
 
   // Detect scroll to add background opacity
   useEffect(() => {
@@ -44,7 +63,6 @@ export default function Navbar() {
     setIsOpen(false);
   }, [pathname]);
 
-  // ⚡ Removed the "Events" link from this array
   const navLinks = [
     { name: "Home", href: "/", icon: Sparkles },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
@@ -74,12 +92,22 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex justify-between items-center h-16 md:h-20">
-            {/* Logo */}
+            {/* 🟢 DYNAMIC ESSENZA LOGO */}
             <Link
               href="/"
-              className="text-2xl font-black text-white tracking-tighter flex items-center gap-2 relative z-50"
+              className="text-2xl font-black text-white tracking-tighter flex items-center gap-2 relative z-50 uppercase"
             >
-              Fest<span className="text-indigo-500">OS</span>
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt="Essenza Logo" 
+                  className="h-8 md:h-10 w-auto object-contain" 
+                />
+              ) : (
+                <>
+                  Essen<span className="text-indigo-500">za</span>
+                </>
+              )}
             </Link>
 
             {/* Desktop Navigation */}
@@ -138,7 +166,7 @@ export default function Navbar() {
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto hide-scrollbar pb-20">
               {navLinks.map((link, i) => {
                 const isActive = pathname === link.href;
-                const Icon = link.icon; // ⚡ EXTRACTED TO PREVENT JSX TS ERROR
+                const Icon = link.icon;
 
                 return (
                   <motion.div
