@@ -19,7 +19,6 @@ import {
   Medal,
   ShieldAlert,
   Crown,
-  Activity,
   Loader2,
   ChevronDown,
   Check,
@@ -48,7 +47,6 @@ function useTeamComparisonData() {
   useEffect(() => {
     fetchStats();
 
-    // ⚡ FIXED: .on() chained BEFORE .subscribe()
     const resultsChannel = supabase
       .channel("comparison-results-sync")
       .on(
@@ -82,32 +80,27 @@ function useTeamComparisonData() {
 }
 
 // ==========================================
-// 2. SLEEK CUSTOM DROPDOWN COMPONENT
+// 2. SLEEK DYNAMIC DROPDOWN COMPONENT
 // ==========================================
 function CustomTeamSelect({
-  value,
-  onChange,
-  options,
+  selectedTeam,
+  onSelect,
+  teams,
   placeholder,
   disabled,
-  activeColor,
 }: {
-  value: string;
-  onChange: (val: string) => void;
-  options: any[];
+  selectedTeam: any;
+  onSelect: (team: any) => void;
+  teams: any[];
   placeholder: string;
   disabled?: boolean;
-  activeColor?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -115,34 +108,36 @@ function CustomTeamSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectedOption = options.find((opt) => opt.team === value);
-
   return (
     <div className="relative w-full" ref={dropdownRef}>
-      {/* TRIGGER BUTTON */}
-      <div
+      {/* ⚡ UPDATED SQUIRCLE TRIGGER BUTTON */}
+      <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full h-[50px] sm:h-[60px] px-4 sm:px-5 bg-[#09090b] rounded-2xl flex items-center justify-between select-none transition-all duration-200 ${
+        className={`w-full h-[50px] sm:h-[60px] px-4 sm:px-5 bg-[#0a0a0a] rounded-2xl flex items-center justify-between select-none transition-all duration-200 border-2 focus:outline-none ${
           disabled
-            ? "opacity-50 cursor-not-allowed border border-white/5 text-zinc-600"
-            : "cursor-pointer hover:bg-[#121214] border border-white/10 text-white"
+            ? "opacity-50 cursor-not-allowed border-white/5 text-zinc-600"
+            : "cursor-pointer hover:bg-[#111] text-white focus:ring-4 focus:ring-indigo-500/20"
         }`}
         style={{
-          borderBottomColor: activeColor && !disabled ? activeColor : undefined,
-          borderBottomWidth: activeColor && !disabled ? "3px" : "1px",
+          borderColor: isOpen && selectedTeam && !disabled 
+            ? selectedTeam.color 
+            : selectedTeam && !disabled 
+              ? `${selectedTeam.color}80` 
+              : '#27272a'
         }}
       >
-        <span
-          className={`font-black text-sm sm:text-base md:text-lg uppercase tracking-wide truncate pr-4 ${!selectedOption ? "text-zinc-600" : "text-white"}`}
-        >
-          {selectedOption ? selectedOption.team : placeholder}
+        <span className="font-black text-sm sm:text-base md:text-lg uppercase tracking-wide truncate pr-4">
+          {selectedTeam ? selectedTeam.team : placeholder}
         </span>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {selectedOption && activeColor && !disabled && (
+          {selectedTeam && !disabled && (
             <div
-              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full shadow-[0_0_10px_rgba(255,255,255,0.2)] animate-in zoom-in duration-300"
-              style={{ backgroundColor: activeColor }}
+              className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full animate-in zoom-in duration-300"
+              style={{ 
+                backgroundColor: selectedTeam.color, 
+                boxShadow: `0 0 12px ${selectedTeam.color}` 
+              }}
             />
           )}
           {disabled ? (
@@ -153,66 +148,59 @@ function CustomTeamSelect({
             />
           )}
         </div>
-      </div>
+      </button>
 
-      {/* DROPDOWN MENU */}
+      {/* ⚡ UPDATED DROPDOWN MENU WITH DYNAMIC CATEGORY TEXT */}
       <AnimatePresence>
         {isOpen && !disabled && (
           <motion.div
-            initial={{ opacity: 0, y: -5, scaleY: 0.95 }}
-            animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            exit={{ opacity: 0, y: -5, scaleY: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute top-full left-0 w-full mt-2 bg-[#09090b] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] origin-top"
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="absolute top-full left-0 w-full mt-2 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[100]"
           >
-            <div className="max-h-[240px] sm:max-h-[280px] overflow-y-auto dropdown-scrollbar p-1">
-              {options.length === 0 ? (
+            <div className="max-h-[240px] sm:max-h-[280px] overflow-y-auto dropdown-scrollbar p-2 flex flex-col gap-1">
+              {teams.length === 0 ? (
                 <div className="p-4 sm:p-5 text-center text-zinc-600 text-[10px] sm:text-xs font-black uppercase tracking-widest">
                   No opponents available
                 </div>
               ) : (
-                options.map((opt) => {
-                  const isSelected = value === opt.team;
-                  const categoryName = ["Indigo", "Violet"].includes(opt.team)
-                    ? "HIFZ CATEGORY"
-                    : "GENERAL CATEGORY";
+                teams.map((opt) => {
+                  const isSelected = selectedTeam?.team === opt.team;
 
                   return (
                     <div
                       key={opt.team}
                       onClick={() => {
-                        onChange(opt.team);
+                        onSelect(opt);
                         setIsOpen(false);
                       }}
-                      className="w-full flex items-center justify-between p-3 sm:p-4 rounded-xl cursor-pointer transition-all group mb-1 last:mb-0"
-                      style={{
-                        backgroundColor: isSelected
-                          ? `${opt.color}15`
-                          : "transparent",
-                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all group ${
+                        isSelected ? "bg-white/5" : "hover:bg-white/[0.02]"
+                      }`}
                     >
-                      <div className="flex items-center gap-3 sm:gap-4 truncate">
+                      <div className="flex items-center gap-4 truncate">
                         <div
-                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 rounded-full transition-opacity duration-300 ${isSelected ? "opacity-100 shadow-[0_0_8px_currentColor]" : "opacity-40 group-hover:opacity-100"}`}
+                          className="w-3 h-3 shrink-0 rounded-full opacity-80"
                           style={{
                             backgroundColor: opt.color,
-                            color: opt.color,
+                            boxShadow: isSelected ? `0 0 10px ${opt.color}` : 'none',
                           }}
                         />
                         <div className="flex flex-col truncate">
-                          <span
-                            className={`font-black uppercase tracking-wide text-sm sm:text-base leading-tight truncate transition-colors ${isSelected ? "text-white" : "text-zinc-400 group-hover:text-zinc-200"}`}
-                          >
+                          <span className="font-black uppercase tracking-wide text-sm sm:text-base leading-none text-white transition-colors">
                             {opt.team}
                           </span>
-                          <span className="text-[8px] sm:text-[9px] font-black text-zinc-600 uppercase tracking-widest mt-0.5 truncate">
-                            {categoryName}
+                          {/* ⚡ DATABASE-DRIVEN CATEGORY */}
+                          <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mt-1.5 leading-none truncate">
+                            {opt.category_group || "General"} Category
                           </span>
                         </div>
                       </div>
                       {isSelected && (
                         <Check
-                          className="w-4 h-4 sm:w-5 sm:h-5 animate-in zoom-in shrink-0 ml-2"
+                          className="w-5 h-5 animate-in zoom-in shrink-0 ml-2"
                           style={{ color: opt.color }}
                         />
                       )}
@@ -248,10 +236,6 @@ export default function TeamComparison() {
   const [teamAName, setTeamAName] = useState("");
   const [teamBName, setTeamBName] = useState("");
 
-  const getTeamGroup = (name: string) => {
-    return ["Indigo", "Violet"].includes(name) ? "Hifz" : "General";
-  };
-
   const teamA = useMemo(
     () => allStats.find((t) => t.team === teamAName),
     [teamAName, allStats],
@@ -261,11 +245,12 @@ export default function TeamComparison() {
     [teamBName, allStats],
   );
 
+  // ⚡ DYNAMIC DATABASE FILTERING (Removes the old hardcoded "Indigo" check)
   const availableForB = useMemo(() => {
     return allStats.filter(
       (t) =>
         t.team !== teamAName &&
-        (!teamA || getTeamGroup(t.team) === getTeamGroup(teamA.team)),
+        (!teamA || t.category_group === teamA.category_group)
     );
   }, [allStats, teamAName, teamA]);
 
@@ -342,20 +327,20 @@ export default function TeamComparison() {
 
       {/* TEAM SELECTORS */}
       <div className="flex flex-col md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-6 mb-8 md:mb-12 relative z-50">
+        
         {/* TEAM ALPHA SELECTOR */}
         <div className="w-full">
           <label className="text-[9px] md:text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2 pl-1">
-            <Medal className="w-3 h-3" /> Team Alpha
+            <Medal className="w-3 h-3 text-indigo-400" /> Team Alpha
           </label>
           <CustomTeamSelect
-            value={teamAName}
-            onChange={(val) => {
-              setTeamAName(val);
-              setTeamBName("");
+            selectedTeam={teamA}
+            onSelect={(team) => {
+              setTeamAName(team.team);
+              setTeamBName(""); // Reset Bravo when Alpha changes
             }}
-            options={allStats}
+            teams={allStats}
             placeholder="Select Challenger..."
-            activeColor={teamA?.color}
           />
         </div>
 
@@ -369,15 +354,14 @@ export default function TeamComparison() {
         {/* TEAM BRAVO SELECTOR */}
         <div className="w-full">
           <label className="text-[9px] md:text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2 pl-1">
-            <ShieldAlert className="w-3 h-3" /> Team Bravo
+            <ShieldAlert className="w-3 h-3 text-purple-400" /> Team Bravo
           </label>
           <CustomTeamSelect
-            value={teamBName}
-            onChange={(val) => setTeamBName(val)}
-            options={availableForB}
-            placeholder={!teamAName ? "Locked" : "Select Opponent..."}
-            disabled={!teamAName}
-            activeColor={teamB?.color}
+            selectedTeam={teamB}
+            onSelect={(team) => setTeamBName(team.team)}
+            teams={availableForB}
+            placeholder={!teamA ? "Locked" : "Select Opponent..."}
+            disabled={!teamA}
           />
         </div>
       </div>
