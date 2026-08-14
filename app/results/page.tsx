@@ -75,10 +75,11 @@ function isFuzzyMatch(query: string, target: string): boolean {
 export default function CategorizedResultsBoard() {
   const [events, setEvents] = useState<EventWithResults[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // ⚡ ADDED ERROR STATE
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // ⚡ Power User Hotkey (Cmd/Ctrl + K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -101,7 +102,6 @@ export default function CategorizedResultsBoard() {
 
   const fetchEventResults = async () => {
     try {
-      // Clear any previous errors
       setErrorMsg(null);
 
       const { data, error } = await supabase
@@ -110,16 +110,14 @@ export default function CategorizedResultsBoard() {
         .order("name", { ascending: true });
 
       if (error) {
-        throw new Error(error.message); // Trigger catch block
+        throw new Error(error.message);
       }
 
-      // ⚡ BULLETPROOF DATA PARSING: Prevent .map() and .filter() from crashing
       const safeData = data || []; 
       
       const processedEvents = safeData
         .map((evt: any) => ({
           ...evt,
-          // Ensure results is an array before calling filter
           results: (Array.isArray(evt.results) ? evt.results : []).filter((r: any) => r.status === "approved"),
         }))
         .filter((evt: any) => evt.results.length > 0);
@@ -134,36 +132,40 @@ export default function CategorizedResultsBoard() {
       console.error("Critical Fetch Error:", err);
       setErrorMsg(err.message || "An unknown error occurred while fetching data.");
     } finally {
-      // ⚡ FINALLY BLOCK: Guarantees the loading spinner ALWAYS turns off
       setLoading(false);
     }
   };
 
   const availableCategories = useMemo(() => Array.from(new Set(events.map((e) => e.category))).sort(), [events]);
   
+  // ⚡ SMART FILTER ENGINE (Global Search + Category Tabs)
   const displayedEvents = useMemo(() => {
-    let filtered = events.filter((e) => e.category === activeCategory);
-
+    // 1. IF SEARCHING: Ignore category tabs and search EVERYTHING
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       
-      filtered = filtered.map(event => {
+      return events.map(event => {
+        // ⚡ CHECK FOR EXACT/PARTIAL EVENT CODE MATCH
         const matchesCode = event.event_code && String(event.event_code).toLowerCase().includes(q);
 
+        // If Event Name OR Event Code matches the search, show ALL results inside it
         if (matchesCode || isFuzzyMatch(searchQuery, event.name)) {
           return event;
         }
 
+        // If the Event doesn't match, filter the results to only show participants that match
         const matchingResults = event.results.filter(r => {
           const { name, team } = extractData(r);
           return isFuzzyMatch(searchQuery, name) || isFuzzyMatch(searchQuery, team);
         });
 
         return { ...event, results: matchingResults };
-      }).filter(event => event.results.length > 0); 
+      }).filter(event => event.results.length > 0); // Drop events that have 0 matches
     }
 
-    return filtered;
+    // 2. IF NOT SEARCHING: Just show the currently selected category
+    return events.filter((e) => e.category === activeCategory);
+    
   }, [events, activeCategory, searchQuery]);
 
   const sortResults = (results: Result[]) => {
@@ -175,7 +177,7 @@ export default function CategorizedResultsBoard() {
     });
   };
 
-  // ⚡ NEW ERROR CRASH SCREEN
+  // ⚡ ERROR CRASH SCREEN
   if (errorMsg) {
     return (
       <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-6 relative overflow-hidden">
