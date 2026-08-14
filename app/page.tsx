@@ -31,7 +31,7 @@ export default function Home() {
     hifz: [],
     compStats: [],
     toppers: [],
-    logoUrl: null, // ⚡ Added state for the dynamic logo
+    logoUrl: null, // ⚡ Dynamic logo state
     stats: { participants: 0, events: 0, hifz: 0, points: 0 },
   });
 
@@ -61,7 +61,7 @@ export default function Home() {
       supabase.from("participants").select("*", { count: "exact", head: true }),
       supabase.from("events").select("*", { count: "exact", head: true }),
       supabase.from("results").select("points").eq("status", "approved"),
-      // ⚡ Fetch the dynamic logo from the settings table
+      // ⚡ Fetch the dynamic logo WITHOUT the .catch() to satisfy Vercel's TS compiler
       supabase
         .from("settings")
         .select("value")
@@ -102,7 +102,7 @@ export default function Home() {
         },
         () => {
           fetchAllData();
-        },
+        }
       )
       .subscribe();
 
@@ -113,7 +113,7 @@ export default function Home() {
         { event: "*", schema: "public", table: "teams" },
         () => {
           fetchAllData();
-        },
+        }
       )
       .subscribe();
 
@@ -128,7 +128,7 @@ export default function Home() {
     let prevPoints: number | null = null;
 
     const sorted = [...teams].sort(
-      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0),
+      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0)
     );
 
     const ranked = sorted.map((team) => {
@@ -165,6 +165,7 @@ export default function Home() {
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-20 md:space-y-32 w-full px-4 sm:px-6 pb-36 md:pb-20 relative z-10">
+        
         {/* --- 1. HERO SECTION --- */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
@@ -215,12 +216,9 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* ⚡ MASSIVE ESSENZA HEADER */}
-          <div className="flex flex-col items-center justify-center min-h-[80px] md:min-h-[140px] w-full relative z-10 px-2 space-y-2">
-            <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-[9rem] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 drop-shadow-lg uppercase leading-none">
-              Essenza
-            </h1>
-            <div className="text-sm sm:text-lg md:text-2xl font-black tracking-[0.3em] md:tracking-[0.5em] text-indigo-400 uppercase h-8">
+          {/* ⚡ RESTORED MASSIVE THEME HEADER */}
+          <div className="flex items-center justify-center min-h-[60px] md:min-h-[120px] w-full relative z-10 px-2">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 drop-shadow-sm">
               <TypeAnimation
                 sequence={[
                   "SYNERGY.",
@@ -234,7 +232,7 @@ export default function Home() {
                 speed={50}
                 repeat={0}
               />
-            </div>
+            </h1>
           </div>
 
           <motion.p
@@ -285,8 +283,7 @@ export default function Home() {
           <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-[2rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl transition-transform duration-700 hover:scale-[1.01]">
             <div className="flex flex-col items-center">
               <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
-                <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result
-                Declaration
+                <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result Declaration
               </span>
               <Countdown targetDate="2026-09-23T19:00:00" />
             </div>
@@ -335,41 +332,27 @@ export default function Home() {
               {loading ? (
                 <div className="animate-pulse space-y-4">
                   {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-20 md:h-24 bg-white/5 rounded-2xl w-full"
-                    />
+                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-2xl w-full" />
                   ))}
                 </div>
               ) : (
                 <AnimatePresence mode="popLayout">
                   {rankedGeneral.map((team: any, index: number) => {
-                    const animationKey =
-                      team.id || team.name || team.team || index;
+                    const animationKey = team.id || team.name || team.team || index;
                     const isFirst = team.rank === 1;
 
                     return (
                       <motion.div
                         key={animationKey}
                         layout="position"
-                        initial={{
-                          opacity: 0,
-                          scale: 0.9,
-                          x: -30,
-                          filter: "blur(10px)",
-                        }}
-                        animate={{
-                          opacity: 1,
-                          scale: 1,
-                          x: 0,
-                          filter: "blur(0px)",
-                        }}
+                        initial={{ opacity: 0, scale: 0.9, x: -30, filter: "blur(10px)" }}
+                        animate={{ opacity: 1, scale: 1, x: 0, filter: "blur(0px)" }}
                         exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                         transition={{
                           type: "spring",
                           stiffness: 350,
                           damping: 30,
-                          delay: index * 0.1,
+                          delay: index * 0.1, 
                         }}
                         className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 md:p-8 rounded-2xl border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
                           isFirst
@@ -378,9 +361,7 @@ export default function Home() {
                         }`}
                         style={{
                           borderColor: team.color,
-                          boxShadow: isFirst
-                            ? `0 0 40px ${team.color}25`
-                            : undefined,
+                          boxShadow: isFirst ? `0 0 40px ${team.color}25` : undefined,
                         }}
                       >
                         <div
@@ -523,8 +504,7 @@ export default function Home() {
         <motion.section {...scrollAnimation}>
           <div className="mb-6 md:mb-12 text-center md:text-left px-2">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
-              <TrendingUp className="w-3 h-3 text-indigo-400" /> Data
-              Intelligence
+              <TrendingUp className="w-3 h-3 text-indigo-400" /> Data Intelligence
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white uppercase">
               Head-to-Head <span className="text-zinc-600">Stats</span>
@@ -573,9 +553,9 @@ export default function Home() {
               Rank
             </span>
           </Link>
-
+          
           <div className="w-px h-8 bg-white/10" />
-
+          
           <Link
             href="/search"
             className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-indigo-400 group"
@@ -585,9 +565,9 @@ export default function Home() {
               Search
             </span>
           </Link>
-
+          
           <div className="w-px h-8 bg-white/10" />
-
+          
           <Link
             href="#toppers"
             className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-yellow-500 group"
