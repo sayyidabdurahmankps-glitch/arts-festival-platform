@@ -100,7 +100,7 @@ export default function SearchPage() {
       <header className="relative z-10 px-6 py-6 md:px-12 max-w-5xl mx-auto w-full">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/5"
+          className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-sm font-black uppercase tracking-widest bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/5 max-sm:hidden"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
