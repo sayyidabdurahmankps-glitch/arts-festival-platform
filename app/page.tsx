@@ -6,7 +6,6 @@ import Link from "next/link";
 import { TypeAnimation } from "react-type-animation";
 import {
   Trophy,
-  Medal,
   Award,
   Zap,
   TrendingUp,
@@ -31,7 +30,8 @@ export default function Home() {
     hifz: [],
     compStats: [],
     toppers: [],
-    logoUrl: null, // ⚡ Dynamic logo state
+    logoUrl: null,
+    themeTexts: ["SYNERGY.", "ARTISTRY.", "LEGACY."], // ⚡ Default fallback
     stats: { participants: 0, events: 0, hifz: 0, points: 0 },
   });
 
@@ -45,43 +45,37 @@ export default function Home() {
       eCount,
       pSum,
       logoRes,
+      themeRes, // ⚡ Fetch theme texts
     ] = await Promise.all([
-      supabase
-        .from("team_leaderboard")
-        .select("*")
-        .neq("category_group", "Hifz")
-        .order("total_points", { ascending: false }),
-      supabase
-        .from("team_leaderboard")
-        .select("*")
-        .eq("category_group", "Hifz")
-        .order("total_points", { ascending: false }),
+      supabase.from("team_leaderboard").select("*").neq("category_group", "Hifz").order("total_points", { ascending: false }),
+      supabase.from("team_leaderboard").select("*").eq("category_group", "Hifz").order("total_points", { ascending: false }),
       supabase.from("team_comparison_stats").select("*"),
       supabase.from("category_toppers").select("*"),
       supabase.from("participants").select("*", { count: "exact", head: true }),
       supabase.from("events").select("*", { count: "exact", head: true }),
       supabase.from("results").select("points").eq("status", "approved"),
-      // ⚡ Fetch the dynamic logo WITHOUT the .catch() to satisfy Vercel's TS compiler
-      supabase
-        .from("settings")
-        .select("value")
-        .eq("key", "logo_url")
-        .maybeSingle(),
+      supabase.from("settings").select("value").eq("key", "logo_url").maybeSingle(),
+      supabase.from("settings").select("value").eq("key", "theme_texts").maybeSingle(), // ⚡
     ]);
+
+    // ⚡ Safely parse the comma-separated string into an array
+    let parsedTexts = ["SYNERGY.", "ARTISTRY.", "LEGACY."];
+    if (themeRes?.data?.value) {
+      parsedTexts = themeRes.data.value.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
 
     setData({
       general: generalRes.data || [],
       hifz: hifzRes.data || [],
       compStats: compRes.data || [],
       toppers: toppersRes.data || [],
-      logoUrl: logoRes?.data?.value || null, // ⚡ Store the logo URL
+      logoUrl: logoRes?.data?.value || null,
+      themeTexts: parsedTexts.length > 0 ? parsedTexts : ["SYNERGY.", "ARTISTRY.", "LEGACY."],
       stats: {
         participants: pCount.count || 0,
         events: eCount.count || 0,
         hifz: hifzRes.data?.length || 0,
-        points:
-          pSum.data?.reduce((acc: number, curr: any) => acc + curr.points, 0) ||
-          0,
+        points: pSum.data?.reduce((acc: number, curr: any) => acc + curr.points, 0) || 0,
       },
     });
     setLoading(false);
@@ -90,31 +84,12 @@ export default function Home() {
   useEffect(() => {
     fetchAllData();
 
-    const resultsChannel = supabase
-      .channel("homepage-results-sync")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "results",
-          filter: "status=eq.approved",
-        },
-        () => {
-          fetchAllData();
-        }
-      )
+    const resultsChannel = supabase.channel("homepage-results-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "results", filter: "status=eq.approved" }, () => fetchAllData())
       .subscribe();
 
-    const teamsChannel = supabase
-      .channel("homepage-teams-sync")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "teams" },
-        () => {
-          fetchAllData();
-        }
-      )
+    const teamsChannel = supabase.channel("homepage-teams-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, () => fetchAllData())
       .subscribe();
 
     return () => {
@@ -126,11 +101,7 @@ export default function Home() {
   const rankTeams = (teams: any[]) => {
     let currentRank = 1;
     let prevPoints: number | null = null;
-
-    const sorted = [...teams].sort(
-      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0)
-    );
-
+    const sorted = [...teams].sort((a, b) => Number(b.total_points || 0) - Number(a.total_points || 0));
     const ranked = sorted.map((team) => {
       const pts = Number(team.total_points || 0);
       if (prevPoints !== null && pts < prevPoints) {
@@ -139,17 +110,26 @@ export default function Home() {
       prevPoints = pts;
       return { ...team, rank: currentRank };
     });
-
     const rankCounts = ranked.reduce((acc: any, t: any) => {
       acc[t.rank] = (acc[t.rank] || 0) + 1;
       return acc;
     }, {});
-
     return ranked.map((t) => ({ ...t, isTie: rankCounts[t.rank] > 1 }));
   };
 
   const rankedGeneral = useMemo(() => rankTeams(data.general), [data.general]);
   const rankedHifz = useMemo(() => rankTeams(data.hifz), [data.hifz]);
+
+  // ⚡ Dynamically build the array format required by TypeAnimation
+  const typeSequence = useMemo(() => {
+    const seq: (string | number)[] = [];
+    data.themeTexts.forEach((text: string, index: number) => {
+      seq.push(text);
+      // Wait 1.5s between words, but 3s on the final word
+      seq.push(index === data.themeTexts.length - 1 ? 3000 : 1500); 
+    });
+    return seq;
+  }, [data.themeTexts]);
 
   const scrollAnimation: any = {
     initial: { opacity: 0, y: 60, scale: 0.95, filter: "blur(15px)" },
@@ -216,22 +196,19 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* ⚡ RESTORED MASSIVE THEME HEADER */}
+          {/* ⚡ DYNAMIC THEME HEADER */}
           <div className="flex items-center justify-center min-h-[60px] md:min-h-[120px] w-full relative z-10 px-2">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 drop-shadow-sm">
-              <TypeAnimation
-                sequence={[
-                  "SYNERGY.",
-                  1500,
-                  "ARTISTRY.",
-                  1500,
-                  "LEGACY.",
-                  3000,
-                ]}
-                wrapper="span"
-                speed={50}
-                repeat={0}
-              />
+            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 drop-shadow-sm uppercase">
+              {/* Only render when loading is done to ensure the sequence doesn't break */}
+              {!loading && typeSequence.length > 0 && (
+                <TypeAnimation
+                  key={typeSequence.join('-')} 
+                  sequence={typeSequence}
+                  wrapper="span"
+                  speed={50}
+                  repeat={0}
+                />
+              )}
             </h1>
           </div>
 
