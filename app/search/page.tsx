@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Search, User, Users, ShieldAlert, Zap, X, ChevronRight, Hash } from "lucide-react";
+import { Search, User, Users, ShieldAlert, Zap, X, ChevronRight, Hash, Medal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -10,11 +10,20 @@ import Link from "next/link";
 type Participant = {
   id: string;
   name: string;
-  participant_id?: string; // ⚡ FIXED: Matches your database column
+  participant_id?: string;
   teams?: {
     name: string;
     color: string;
   };
+  // ⚡ ADDED: Expected structure for the results join
+  results?: {
+    position?: string | number;
+    points?: number;
+    status?: string;
+    events?: {
+      name: string;
+    };
+  }[];
 };
 
 // ----------------------------------------------------------------------
@@ -88,20 +97,30 @@ export default function GlobalSearchPage() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  // ⚡ BOOT: Fetch All Participants
+  // ⚡ BOOT: Fetch All Participants + Their Winnings
   useEffect(() => {
     const fetchRegistry = async () => {
       try {
         setErrorMsg(null);
         const { data, error } = await supabase
           .from("participants")
-          // ⚡ FIXED: Requesting participant_id instead of chest_no
-          .select(`id, name, participant_id, teams ( name, color )`)
+          // ⚡ UPGRADED: Now joins the results and events tables!
+          .select(`
+            id, 
+            name, 
+            participant_id, 
+            teams ( name, color ),
+            results (
+              position,
+              points,
+              status,
+              events ( name )
+            )
+          `)
           .order("name", { ascending: true });
 
         if (error) throw new Error(error.message);
 
-        // Type casting bypasses Vercel's strict mismatch check
         setParticipants((data as any) || []);
       } catch (err: any) {
         console.error("Critical Fetch Error:", err);
@@ -123,7 +142,6 @@ export default function GlobalSearchPage() {
     return participants.filter((p) => {
       const nameMatch = isFuzzyMatch(searchQuery, p.name);
       const teamMatch = p.teams?.name ? isFuzzyMatch(searchQuery, p.teams.name) : false;
-      // ⚡ FIXED: Filtering by participant_id
       const idMatch = p.participant_id && String(p.participant_id).toLowerCase().includes(q);
 
       return nameMatch || teamMatch || idMatch;
@@ -222,6 +240,9 @@ export default function GlobalSearchPage() {
                 {displayedResults.map((participant, idx) => {
                   const teamColor = participant.teams?.color || "#6366f1";
                   const teamName = participant.teams?.name || "Independent";
+                  
+                  // ⚡ Filter only approved winnings directly from the join
+                  const approvedWins = participant.results?.filter(r => r.status === 'approved') || [];
 
                   return (
                     <motion.div
@@ -230,7 +251,7 @@ export default function GlobalSearchPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2, delay: idx * 0.02 }}
-                      className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 rounded-2xl bg-[#0a0a0a]/80 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] backdrop-blur-xl transition-all shadow-lg overflow-hidden relative"
+                      className="group flex flex-col p-4 md:p-5 rounded-2xl bg-[#0a0a0a]/80 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] backdrop-blur-xl transition-all shadow-lg overflow-hidden relative"
                     >
                       {/* Left Accent Bar */}
                       <div 
@@ -238,35 +259,54 @@ export default function GlobalSearchPage() {
                         style={{ backgroundColor: teamColor }}
                       />
 
-                      <div className="flex items-start sm:items-center gap-4 pl-2 w-full sm:w-auto">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
-                          <User className="w-5 h-5 text-zinc-500" />
-                        </div>
-                        <div className="flex flex-col truncate">
-                          <h3 className="text-lg md:text-xl font-bold text-white tracking-tight truncate">
-                            {participant.name}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
-                            <span className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                              <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
-                              {teamName}
-                            </span>
-                            {/* ⚡ FIXED: Rendering participant_id correctly */}
-                            {participant.participant_id && (
-                              <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 px-2 py-1">
-                                <Hash className="w-3 h-3" />
-                                {participant.participant_id}
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-start sm:items-center gap-4 pl-2 w-full sm:w-auto">
+                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+                            <User className="w-5 h-5 text-zinc-500" />
+                          </div>
+                          <div className="flex flex-col truncate">
+                            <h3 className="text-lg md:text-xl font-bold text-white tracking-tight truncate">
+                              {participant.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
+                              <span className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
+                                {teamName}
                               </span>
-                            )}
+                              {participant.participant_id && (
+                                <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 px-2 py-1">
+                                  <Hash className="w-3 h-3" />
+                                  {participant.participant_id}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="hidden sm:flex items-center shrink-0 ml-4">
+                          <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-600 group-hover:bg-white/10 group-hover:text-white transition-all">
+                            <ChevronRight className="w-4 h-4" />
                           </div>
                         </div>
                       </div>
 
-                      <div className="hidden sm:flex items-center shrink-0 ml-4">
-                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-600 group-hover:bg-white/10 group-hover:text-white transition-all">
-                          <ChevronRight className="w-4 h-4" />
+                      {/* ⚡ WINNINGS SECTION */}
+                      {approvedWins.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-white/5 flex flex-wrap gap-2 ml-2 sm:ml-16">
+                          {approvedWins.map((win, rIdx) => (
+                            <span 
+                              key={rIdx} 
+                              className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-yellow-500 bg-yellow-500/10 px-2.5 py-1.5 rounded-lg border border-yellow-500/20 shadow-inner"
+                            >
+                              <Medal className="w-3 h-3" />
+                              {win.position ? `${win.position} PLACE - ` : ""}
+                              {win.events?.name || "Event"}
+                              {win.points ? ` (${win.points} PTS)` : ""}
+                            </span>
+                          ))}
                         </div>
-                      </div>
+                      )}
+
                     </motion.div>
                   );
                 })}
