@@ -34,7 +34,6 @@ export default function LiveBentoGallery() {
 
   // ⚡ DYNAMIC CATEGORIES: Extract and CLEAN available categories
   const availableCategories = useMemo(() => {
-    // Extract categories, remove undefined/null, trim extra spaces, and apply Type Guard
     const validCats = assets
       .map((a) => (a.category ? a.category.trim() : null))
       .filter((cat): cat is string => cat !== null && cat !== ""); 
@@ -69,13 +68,15 @@ export default function LiveBentoGallery() {
   return (
     <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-cyan-500 selection:text-black relative pb-32">
       
-      {/* 1. APP-STYLE HEADER */}
-      <header className="px-4 md:px-10 pt-12 pb-6 flex items-end justify-between border-b border-white/5">
+      {/* 1. APP-STYLE HEADER 
+          ⚡ FIXED: Increased pt-12 to pt-28 md:pt-36 to push text below the fixed navbar 
+      */}
+      <header className="px-4 md:px-10 pt-28 md:pt-36 pb-6 flex items-end justify-between border-b border-white/5 relative z-10">
         <div>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black italic tracking-tighter uppercase leading-none">
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase leading-none drop-shadow-lg">
             Media<span className="text-cyan-400 not-italic">.</span>Vault
           </h1>
-          <p className="text-[9px] md:text-[10px] font-mono tracking-[0.3em] uppercase opacity-40 mt-3 flex items-center gap-2">
+          <p className="text-[9px] md:text-[10px] font-mono tracking-[0.3em] uppercase opacity-40 mt-4 flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
             {filteredItems.length} Records Found
           </p>
@@ -83,7 +84,7 @@ export default function LiveBentoGallery() {
       </header>
 
       {/* 2. TRUE MOBILE BENTO GRID */}
-      <main className="p-2 md:p-10 pt-4 md:pt-10">
+      <main className="p-2 md:p-10 pt-4 md:pt-10 relative z-10">
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 grid-flow-row-dense gap-2 md:gap-4 auto-rows-[180px] md:auto-rows-[280px]">
             {filteredItems.map((item, index) => {
