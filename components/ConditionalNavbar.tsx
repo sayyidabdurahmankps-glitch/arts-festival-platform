@@ -7,7 +7,6 @@ import {
   Menu,
   X,
   Trophy,
-  Calendar,
   Search,
   Sparkles,
   Image as ImageIcon,
@@ -45,10 +44,10 @@ export default function Navbar() {
     setIsOpen(false);
   }, [pathname]);
 
+  // ⚡ Removed the "Events" link from this array
   const navLinks = [
     { name: "Home", href: "/", icon: Sparkles },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-    { name: "Events", href: "/events", icon: Calendar },
     { name: "Search", href: "/search", icon: Search },
     { name: "Results", href: "/results", icon: Activity },
     { name: "Gallery", href: "/gallery", icon: ImageIcon },
@@ -61,7 +60,7 @@ export default function Navbar() {
     pathname?.startsWith("/media") ||
     pathname?.startsWith("/launch")
   ) {
-    return null; 
+    return null;
   }
 
   return (
@@ -99,7 +98,7 @@ export default function Navbar() {
                   </Link>
                 );
               })}
-              
+
               <Link
                 href="/live"
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-sm font-bold tracking-widest uppercase"
