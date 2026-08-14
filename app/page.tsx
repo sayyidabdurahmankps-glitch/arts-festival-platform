@@ -36,28 +36,39 @@ export default function Home() {
   });
 
   const fetchAllData = async () => {
-    const [generalRes, hifzRes, compRes, toppersRes, pCount, eCount, pSum, logoRes] =
-      await Promise.all([
-        supabase
-          .from("team_leaderboard")
-          .select("*")
-          .neq("category_group", "Hifz")
-          .order("total_points", { ascending: false }),
-        supabase
-          .from("team_leaderboard")
-          .select("*")
-          .eq("category_group", "Hifz")
-          .order("total_points", { ascending: false }),
-        supabase.from("team_comparison_stats").select("*"),
-        supabase.from("category_toppers").select("*"),
-        supabase
-          .from("participants")
-          .select("*", { count: "exact", head: true }),
-        supabase.from("events").select("*", { count: "exact", head: true }),
-        supabase.from("results").select("points").eq("status", "approved"),
-        // ⚡ Safely fetch the dynamic logo from the new settings table
-        supabase.from("settings").select("value").eq("key", "logo_url").maybeSingle().catch(() => ({ data: null })),
-      ]);
+    const [
+      generalRes,
+      hifzRes,
+      compRes,
+      toppersRes,
+      pCount,
+      eCount,
+      pSum,
+      logoRes,
+    ] = await Promise.all([
+      supabase
+        .from("team_leaderboard")
+        .select("*")
+        .neq("category_group", "Hifz")
+        .order("total_points", { ascending: false }),
+      supabase
+        .from("team_leaderboard")
+        .select("*")
+        .eq("category_group", "Hifz")
+        .order("total_points", { ascending: false }),
+      supabase.from("team_comparison_stats").select("*"),
+      supabase.from("category_toppers").select("*"),
+      supabase.from("participants").select("*", { count: "exact", head: true }),
+      supabase.from("events").select("*", { count: "exact", head: true }),
+      supabase.from("results").select("points").eq("status", "approved"),
+      // ⚡ Fetch the dynamic logo from the settings table
+      supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "logo_url")
+        .maybeSingle()
+        .catch(() => ({ data: null })),
+    ]);
 
     setData({
       general: generalRes.data || [],
@@ -92,7 +103,7 @@ export default function Home() {
         },
         () => {
           fetchAllData();
-        }
+        },
       )
       .subscribe();
 
@@ -103,7 +114,7 @@ export default function Home() {
         { event: "*", schema: "public", table: "teams" },
         () => {
           fetchAllData();
-        }
+        },
       )
       .subscribe();
 
@@ -113,15 +124,12 @@ export default function Home() {
     };
   }, []);
 
-  // ==========================================
-  // ⚡ BULLETPROOF DENSE RANKING ENGINE
-  // ==========================================
   const rankTeams = (teams: any[]) => {
     let currentRank = 1;
     let prevPoints: number | null = null;
 
     const sorted = [...teams].sort(
-      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0)
+      (a, b) => Number(b.total_points || 0) - Number(a.total_points || 0),
     );
 
     const ranked = sorted.map((team) => {
@@ -144,25 +152,20 @@ export default function Home() {
   const rankedGeneral = useMemo(() => rankTeams(data.general), [data.general]);
   const rankedHifz = useMemo(() => rankTeams(data.hifz), [data.hifz]);
 
-  // ⚡ PREMIUM SCROLL ANIMATION CONFIG (Blur + Scale + Fluid Spring)
   const scrollAnimation: any = {
     initial: { opacity: 0, y: 60, scale: 0.95, filter: "blur(15px)" },
     whileInView: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
     viewport: { once: true, margin: "-50px" },
-    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] }, // Apple-style smooth ease
+    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#050505] text-zinc-400 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden relative">
-      {/* Ambient Background Glows */}
       <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none" />
       <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
-
-      {/* Architectural Grid Background */}
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-20 md:space-y-32 w-full px-4 sm:px-6 pb-36 md:pb-20 relative z-10">
-        
         {/* --- 1. HERO SECTION --- */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
@@ -181,14 +184,16 @@ export default function Home() {
           >
             <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 overflow-hidden cursor-pointer">
               {data.logoUrl ? (
-                <img 
-                  src={data.logoUrl} 
-                  alt="Essenza Logo" 
-                  className="w-full h-full object-contain p-2 md:p-3 group-hover:scale-110 transition-transform duration-700" 
+                <img
+                  src={data.logoUrl}
+                  alt="Essenza Logo"
+                  className="w-full h-full object-contain p-2 md:p-3 group-hover:scale-110 transition-transform duration-700"
                 />
               ) : (
                 <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
-                  Essenza<br />Logo
+                  Essenza
+                  <br />
+                  Logo
                 </span>
               )}
             </div>
@@ -233,7 +238,7 @@ export default function Home() {
             </div>
           </div>
 
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8, duration: 1 }}
@@ -348,14 +353,24 @@ export default function Home() {
                       <motion.div
                         key={animationKey}
                         layout="position"
-                        initial={{ opacity: 0, scale: 0.9, x: -30, filter: "blur(10px)" }}
-                        animate={{ opacity: 1, scale: 1, x: 0, filter: "blur(0px)" }}
+                        initial={{
+                          opacity: 0,
+                          scale: 0.9,
+                          x: -30,
+                          filter: "blur(10px)",
+                        }}
+                        animate={{
+                          opacity: 1,
+                          scale: 1,
+                          x: 0,
+                          filter: "blur(0px)",
+                        }}
                         exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                         transition={{
                           type: "spring",
                           stiffness: 350,
                           damping: 30,
-                          delay: index * 0.1, // Staggered entrance
+                          delay: index * 0.1,
                         }}
                         className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 md:p-8 rounded-2xl border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
                           isFirst
@@ -559,9 +574,9 @@ export default function Home() {
               Rank
             </span>
           </Link>
-          
-          <div className="w-px h-8 bg-white/10" /> {/* Divider */}
-          
+
+          <div className="w-px h-8 bg-white/10" />
+
           <Link
             href="/search"
             className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-indigo-400 group"
@@ -571,9 +586,9 @@ export default function Home() {
               Search
             </span>
           </Link>
-          
-          <div className="w-px h-8 bg-white/10" /> {/* Divider */}
-          
+
+          <div className="w-px h-8 bg-white/10" />
+
           <Link
             href="#toppers"
             className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-yellow-500 group"
