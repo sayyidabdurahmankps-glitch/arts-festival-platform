@@ -66,8 +66,7 @@ export default function Home() {
         .from("settings")
         .select("value")
         .eq("key", "logo_url")
-        .maybeSingle()
-        .catch(() => ({ data: null })),
+        .maybeSingle(),
     ]);
 
     setData({
