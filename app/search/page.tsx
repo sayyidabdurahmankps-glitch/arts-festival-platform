@@ -100,7 +100,7 @@ export default function GlobalSearchPage() {
 
         if (error) throw new Error(error.message);
 
-        setParticipants(data || []);
+        setParticipants((data as any )|| []);
       } catch (err: any) {
         console.error("Critical Fetch Error:", err);
         setErrorMsg(err.message || "An unknown error occurred while fetching the registry.");
