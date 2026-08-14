@@ -2,9 +2,19 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Search, User, Users, ShieldAlert, Zap, X, ChevronRight, Hash, Medal } from "lucide-react";
+import {
+  Search,
+  User,
+  Users,
+  ShieldAlert,
+  Zap,
+  X,
+  ChevronRight,
+  Hash,
+  Medal,
+  Clock,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 
 // --- TYPES ---
 type Participant = {
@@ -15,22 +25,16 @@ type Participant = {
     name: string;
     color: string;
   };
-  // ⚡ ADDED: Expected structure for the results join
-  results?: {
-    position?: string | number;
-    points?: number;
-    status?: string;
-    events?: {
-      name: string;
-    };
-  }[];
+  results?: any; // ⚡ Broadened type to safely accept whatever Supabase returns
 };
 
 // ----------------------------------------------------------------------
-// ⚡ ZERO-DEPENDENCY FUZZY SEARCH ENGINE (HANDLES TYPOS)
+// ⚡ ZERO-DEPENDENCY FUZZY SEARCH ENGINE
 // ----------------------------------------------------------------------
 function levenshteinDistance(a: string, b: string): number {
-  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    new Array(b.length + 1).fill(0),
+  );
   for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
   for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
   for (let i = 1; i <= a.length; i++) {
@@ -39,7 +43,7 @@ function levenshteinDistance(a: string, b: string): number {
       matrix[i][j] = Math.min(
         matrix[i - 1][j] + 1,
         matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
+        matrix[i - 1][j - 1] + cost,
       );
     }
   }
@@ -50,9 +54,9 @@ function isFuzzyMatch(query: string, target: string): boolean {
   if (!target) return false;
   const q = query.toLowerCase().trim();
   const t = target.toLowerCase().trim();
-  
+
   if (!q) return true;
-  if (t.includes(q)) return true; // Direct match
+  if (t.includes(q)) return true;
 
   let qIdx = 0;
   for (let i = 0; i < t.length; i++) {
@@ -80,32 +84,31 @@ export default function GlobalSearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ⚡ Power User Hotkey (Cmd/Ctrl + K)
+  // Power User Hotkey (Cmd/Ctrl + K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         inputRef.current?.focus();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Focus input on mount
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  // ⚡ BOOT: Fetch All Participants + Their Winnings
+  // ⚡ FETCH ENGINE
   useEffect(() => {
     const fetchRegistry = async () => {
       try {
         setErrorMsg(null);
         const { data, error } = await supabase
           .from("participants")
-          // ⚡ UPGRADED: Now joins the results and events tables!
-          .select(`
+          .select(
+            `
             id, 
             name, 
             participant_id, 
@@ -116,7 +119,8 @@ export default function GlobalSearchPage() {
               status,
               events ( name )
             )
-          `)
+          `,
+          )
           .order("name", { ascending: true });
 
         if (error) throw new Error(error.message);
@@ -124,7 +128,10 @@ export default function GlobalSearchPage() {
         setParticipants((data as any) || []);
       } catch (err: any) {
         console.error("Critical Fetch Error:", err);
-        setErrorMsg(err.message || "An unknown error occurred while fetching the registry.");
+        setErrorMsg(
+          err.message ||
+            "An unknown error occurred while fetching the registry.",
+        );
       } finally {
         setLoading(false);
       }
@@ -138,14 +145,20 @@ export default function GlobalSearchPage() {
     if (!searchQuery.trim()) return [];
 
     const q = searchQuery.toLowerCase().trim();
-    
-    return participants.filter((p) => {
-      const nameMatch = isFuzzyMatch(searchQuery, p.name);
-      const teamMatch = p.teams?.name ? isFuzzyMatch(searchQuery, p.teams.name) : false;
-      const idMatch = p.participant_id && String(p.participant_id).toLowerCase().includes(q);
 
-      return nameMatch || teamMatch || idMatch;
-    }).slice(0, 50); // Limit to top 50 to keep UI lightning fast
+    return participants
+      .filter((p) => {
+        const nameMatch = isFuzzyMatch(searchQuery, p.name);
+        const teamMatch = p.teams?.name
+          ? isFuzzyMatch(searchQuery, p.teams.name)
+          : false;
+        const idMatch =
+          p.participant_id &&
+          String(p.participant_id).toLowerCase().includes(q);
+
+        return nameMatch || teamMatch || idMatch;
+      })
+      .slice(0, 50);
   }, [participants, searchQuery]);
 
   // ⚡ ERROR CRASH SCREEN
@@ -154,9 +167,11 @@ export default function GlobalSearchPage() {
       <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-6 relative overflow-hidden">
         <div className="bg-red-500/10 border border-red-500/50 p-8 rounded-3xl max-w-lg w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.2)] backdrop-blur-xl relative z-10">
           <ShieldAlert className="w-16 h-16 mx-auto mb-6 text-red-500" />
-          <h2 className="text-2xl font-black text-red-400 mb-2 uppercase tracking-widest">Registry Error</h2>
+          <h2 className="text-2xl font-black text-red-400 mb-2 uppercase tracking-widest">
+            Registry Error
+          </h2>
           <p className="text-red-200/80 font-mono text-sm mb-6">{errorMsg}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all"
           >
@@ -189,11 +204,13 @@ export default function GlobalSearchPage() {
       <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
 
       <main className="max-w-4xl mx-auto pt-24 md:pt-32 px-4 md:px-6 w-full relative z-10 flex-1 flex flex-col">
-        
         {/* HEADER & SEARCH BAR */}
         <div className="text-center mb-8 md:mb-12 animate-in fade-in slide-in-from-top-8 duration-700">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white mb-6 uppercase">
-            Participant <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Search</span>
+            Participant{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
+              Search
+            </span>
           </h1>
 
           <div className="relative group/search w-full max-w-2xl mx-auto">
@@ -203,12 +220,15 @@ export default function GlobalSearchPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, team, or ID..." 
+              placeholder="Search by name, team, or ID..."
               className="w-full bg-black/80 backdrop-blur-3xl border border-white/10 focus:border-indigo-500/50 focus:bg-black text-white placeholder-zinc-600 rounded-2xl md:rounded-[2rem] py-5 md:py-6 pl-14 pr-16 outline-none transition-all shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] focus:shadow-[0_0_40px_rgba(99,102,241,0.2)] text-base md:text-lg font-bold tracking-wide"
             />
             <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center">
               {searchQuery ? (
-                <button onClick={() => setSearchQuery('')} className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white"
+                >
                   <X className="w-5 h-5" />
                 </button>
               ) : (
@@ -225,14 +245,22 @@ export default function GlobalSearchPage() {
           {!searchQuery.trim() ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center opacity-50 py-20 animate-in fade-in duration-1000">
               <Users className="w-16 h-16 mb-6 text-zinc-700" />
-              <p className="text-xl font-bold text-zinc-500 tracking-tight">Access the Essenza Registry</p>
-              <p className="text-sm font-mono uppercase tracking-[0.2em] text-zinc-600 mt-2">Find anyone instantly.</p>
+              <p className="text-xl font-bold text-zinc-500 tracking-tight">
+                Access the Essenza Registry
+              </p>
+              <p className="text-sm font-mono uppercase tracking-[0.2em] text-zinc-600 mt-2">
+                Find anyone instantly.
+              </p>
             </div>
           ) : displayedResults.length === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center py-20 animate-in fade-in zoom-in-95">
               <ShieldAlert className="w-16 h-16 mb-6 text-indigo-900/50" />
-              <p className="text-xl font-bold text-zinc-400 tracking-tight">No participants found</p>
-              <p className="text-sm font-mono uppercase tracking-[0.2em] text-zinc-600 mt-2">Try checking the spelling.</p>
+              <p className="text-xl font-bold text-zinc-400 tracking-tight">
+                No participants found
+              </p>
+              <p className="text-sm font-mono uppercase tracking-[0.2em] text-zinc-600 mt-2">
+                Try checking the spelling.
+              </p>
             </div>
           ) : (
             <div className="space-y-3 pb-20">
@@ -240,9 +268,14 @@ export default function GlobalSearchPage() {
                 {displayedResults.map((participant, idx) => {
                   const teamColor = participant.teams?.color || "#6366f1";
                   const teamName = participant.teams?.name || "Independent";
-                  
-                  // ⚡ Filter only approved winnings directly from the join
-                  const approvedWins = participant.results?.filter(r => r.status === 'approved') || [];
+
+                  // ⚡ BULLETPROOF RESULT PARSING
+                  // Handles undefined, null, objects, and arrays safely.
+                  const safeResultsArray = Array.isArray(participant.results)
+                    ? participant.results
+                    : participant.results
+                      ? [participant.results]
+                      : [];
 
                   return (
                     <motion.div
@@ -253,8 +286,7 @@ export default function GlobalSearchPage() {
                       transition={{ duration: 0.2, delay: idx * 0.02 }}
                       className="group flex flex-col p-4 md:p-5 rounded-2xl bg-[#0a0a0a]/80 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] backdrop-blur-xl transition-all shadow-lg overflow-hidden relative"
                     >
-                      {/* Left Accent Bar */}
-                      <div 
+                      <div
                         className="absolute left-0 top-0 bottom-0 w-1.5 opacity-80"
                         style={{ backgroundColor: teamColor }}
                       />
@@ -270,7 +302,10 @@ export default function GlobalSearchPage() {
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
                               <span className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                                <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0 shadow-sm"
+                                  style={{ backgroundColor: teamColor }}
+                                />
                                 {teamName}
                               </span>
                               {participant.participant_id && (
@@ -282,31 +317,42 @@ export default function GlobalSearchPage() {
                             </div>
                           </div>
                         </div>
-
-                        <div className="hidden sm:flex items-center shrink-0 ml-4">
-                          <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-600 group-hover:bg-white/10 group-hover:text-white transition-all">
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        </div>
                       </div>
 
-                      {/* ⚡ WINNINGS SECTION */}
-                      {approvedWins.length > 0 && (
+                      {/* ⚡ FAIL-SAFE WINNINGS DISPLAY */}
+                      {safeResultsArray.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-white/5 flex flex-wrap gap-2 ml-2 sm:ml-16">
-                          {approvedWins.map((win, rIdx) => (
-                            <span 
-                              key={rIdx} 
-                              className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-yellow-500 bg-yellow-500/10 px-2.5 py-1.5 rounded-lg border border-yellow-500/20 shadow-inner"
-                            >
-                              <Medal className="w-3 h-3" />
-                              {win.position ? `${win.position} PLACE - ` : ""}
-                              {win.events?.name || "Event"}
-                              {win.points ? ` (${win.points} PTS)` : ""}
-                            </span>
-                          ))}
+                          {safeResultsArray.map((win, rIdx) => {
+                            // Extract event name regardless of how Supabase returns it
+                            const evName = Array.isArray(win.events)
+                              ? win.events[0]?.name
+                              : win.events?.name;
+                            const isApproved =
+                              String(win.status).toLowerCase() === "approved";
+
+                            return (
+                              <span
+                                key={rIdx}
+                                className={`inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-1.5 rounded-lg border shadow-inner ${
+                                  isApproved
+                                    ? "text-yellow-500 bg-yellow-500/10 border-yellow-500/20"
+                                    : "text-zinc-400 bg-white/5 border-white/10"
+                                }`}
+                              >
+                                {isApproved ? (
+                                  <Medal className="w-3 h-3" />
+                                ) : (
+                                  <Clock className="w-3 h-3 opacity-50" />
+                                )}
+                                {win.position ? `${win.position} PLACE - ` : ""}
+                                {evName || "Unknown Event"}
+                                {win.points ? ` (${win.points} PTS)` : ""}
+                                {!isApproved && " (PENDING)"}
+                              </span>
+                            );
+                          })}
                         </div>
                       )}
-
                     </motion.div>
                   );
                 })}
