@@ -10,7 +10,7 @@ import Link from "next/link";
 type Participant = {
   id: string;
   name: string;
-  chest_no?: string;
+  participant_id?: string; // ⚡ FIXED: Matches your database column
   teams?: {
     name: string;
     color: string;
@@ -95,12 +95,14 @@ export default function GlobalSearchPage() {
         setErrorMsg(null);
         const { data, error } = await supabase
           .from("participants")
-          .select(`id, name, chest_no, teams ( name, color )`)
+          // ⚡ FIXED: Requesting participant_id instead of chest_no
+          .select(`id, name, participant_id, teams ( name, color )`)
           .order("name", { ascending: true });
 
         if (error) throw new Error(error.message);
 
-        setParticipants((data as any )|| []);
+        // Type casting bypasses Vercel's strict mismatch check
+        setParticipants((data as any) || []);
       } catch (err: any) {
         console.error("Critical Fetch Error:", err);
         setErrorMsg(err.message || "An unknown error occurred while fetching the registry.");
@@ -121,9 +123,10 @@ export default function GlobalSearchPage() {
     return participants.filter((p) => {
       const nameMatch = isFuzzyMatch(searchQuery, p.name);
       const teamMatch = p.teams?.name ? isFuzzyMatch(searchQuery, p.teams.name) : false;
-      const chestMatch = p.chest_no && String(p.chest_no).toLowerCase().includes(q);
+      // ⚡ FIXED: Filtering by participant_id
+      const idMatch = p.participant_id && String(p.participant_id).toLowerCase().includes(q);
 
-      return nameMatch || teamMatch || chestMatch;
+      return nameMatch || teamMatch || idMatch;
     }).slice(0, 50); // Limit to top 50 to keep UI lightning fast
   }, [participants, searchQuery]);
 
@@ -182,7 +185,7 @@ export default function GlobalSearchPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name, team, or chest no..." 
+              placeholder="Search by name, team, or ID..." 
               className="w-full bg-black/80 backdrop-blur-3xl border border-white/10 focus:border-indigo-500/50 focus:bg-black text-white placeholder-zinc-600 rounded-2xl md:rounded-[2rem] py-5 md:py-6 pl-14 pr-16 outline-none transition-all shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] focus:shadow-[0_0_40px_rgba(99,102,241,0.2)] text-base md:text-lg font-bold tracking-wide"
             />
             <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center">
@@ -248,10 +251,11 @@ export default function GlobalSearchPage() {
                               <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
                               {teamName}
                             </span>
-                            {participant.chest_no && (
+                            {/* ⚡ FIXED: Rendering participant_id correctly */}
+                            {participant.participant_id && (
                               <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 px-2 py-1">
                                 <Hash className="w-3 h-3" />
-                                {participant.chest_no}
+                                {participant.participant_id}
                               </span>
                             )}
                           </div>
