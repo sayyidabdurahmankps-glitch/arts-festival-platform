@@ -1,561 +1,276 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import Link from "next/link";
-import { TypeAnimation } from "react-type-animation";
-import {
-  Trophy,
-  Award,
-  Zap,
-  TrendingUp,
-  Rocket,
-  Search,
-  Crown,
-} from "lucide-react";
+import { Search, User, Users, ShieldAlert, Zap, X, ChevronRight, Hash } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
-// Core Components
-import Countdown from "@/components/Countdown";
-import StatsSection from "@/components/StatsSection";
-import TeamChart from "@/components/TeamChart";
-import TeamComparison from "@/components/TeamComparison";
-import CategoryToppers from "@/components/CategoryToppers";
-import Footer from "@/components/Footer";
-
-export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>({
-    general: [],
-    hifz: [],
-    compStats: [],
-    toppers: [],
-    logoUrl: null,
-    themeTexts: ["SYNERGY.", "ARTISTRY.", "LEGACY."], // ⚡ Default fallback
-    stats: { participants: 0, events: 0, hifz: 0, points: 0 },
-  });
-
-  const fetchAllData = async () => {
-    const [
-      generalRes,
-      hifzRes,
-      compRes,
-      toppersRes,
-      pCount,
-      eCount,
-      pSum,
-      logoRes,
-      themeRes, // ⚡ Fetch theme texts
-    ] = await Promise.all([
-      supabase.from("team_leaderboard").select("*").neq("category_group", "Hifz").order("total_points", { ascending: false }),
-      supabase.from("team_leaderboard").select("*").eq("category_group", "Hifz").order("total_points", { ascending: false }),
-      supabase.from("team_comparison_stats").select("*"),
-      supabase.from("category_toppers").select("*"),
-      supabase.from("participants").select("*", { count: "exact", head: true }),
-      supabase.from("events").select("*", { count: "exact", head: true }),
-      supabase.from("results").select("points").eq("status", "approved"),
-      supabase.from("settings").select("value").eq("key", "logo_url").maybeSingle(),
-      supabase.from("settings").select("value").eq("key", "theme_texts").maybeSingle(), // ⚡
-    ]);
-
-    // ⚡ Safely parse the comma-separated string into an array
-    let parsedTexts = ["SYNERGY.", "ARTISTRY.", "LEGACY."];
-    if (themeRes?.data?.value) {
-      parsedTexts = themeRes.data.value.split(',').map((s: string) => s.trim()).filter(Boolean);
-    }
-
-    setData({
-      general: generalRes.data || [],
-      hifz: hifzRes.data || [],
-      compStats: compRes.data || [],
-      toppers: toppersRes.data || [],
-      logoUrl: logoRes?.data?.value || null,
-      themeTexts: parsedTexts.length > 0 ? parsedTexts : ["SYNERGY.", "ARTISTRY.", "LEGACY."],
-      stats: {
-        participants: pCount.count || 0,
-        events: eCount.count || 0,
-        hifz: hifzRes.data?.length || 0,
-        points: pSum.data?.reduce((acc: number, curr: any) => acc + curr.points, 0) || 0,
-      },
-    });
-    setLoading(false);
+// --- TYPES ---
+type Participant = {
+  id: string;
+  name: string;
+  chest_no?: string;
+  teams?: {
+    name: string;
+    color: string;
   };
+};
 
+// ----------------------------------------------------------------------
+// ⚡ ZERO-DEPENDENCY FUZZY SEARCH ENGINE (HANDLES TYPOS)
+// ----------------------------------------------------------------------
+function levenshteinDistance(a: string, b: string): number {
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
+function isFuzzyMatch(query: string, target: string): boolean {
+  if (!target) return false;
+  const q = query.toLowerCase().trim();
+  const t = target.toLowerCase().trim();
+  
+  if (!q) return true;
+  if (t.includes(q)) return true; // Direct match
+
+  let qIdx = 0;
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === q[qIdx]) qIdx++;
+    if (qIdx === q.length) return true;
+  }
+
+  if (q.length > 3) {
+    const targetWords = t.split(/[\s\-]+/);
+    for (const word of targetWords) {
+      const maxTypos = q.length > 5 ? 2 : 1;
+      if (levenshteinDistance(q, word) <= maxTypos) return true;
+    }
+  }
+  return false;
+}
+
+// ----------------------------------------------------------------------
+// MAIN COMPONENT
+// ----------------------------------------------------------------------
+export default function GlobalSearchPage() {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // ⚡ Power User Hotkey (Cmd/Ctrl + K)
   useEffect(() => {
-    fetchAllData();
-
-    const resultsChannel = supabase.channel("homepage-results-sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "results", filter: "status=eq.approved" }, () => fetchAllData())
-      .subscribe();
-
-    const teamsChannel = supabase.channel("homepage-teams-sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "teams" }, () => fetchAllData())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(resultsChannel);
-      supabase.removeChannel(teamsChannel);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
     };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const rankTeams = (teams: any[]) => {
-    let currentRank = 1;
-    let prevPoints: number | null = null;
-    const sorted = [...teams].sort((a, b) => Number(b.total_points || 0) - Number(a.total_points || 0));
-    const ranked = sorted.map((team) => {
-      const pts = Number(team.total_points || 0);
-      if (prevPoints !== null && pts < prevPoints) {
-        currentRank++;
+  // Focus input on mount
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, []);
+
+  // ⚡ BOOT: Fetch All Participants
+  useEffect(() => {
+    const fetchRegistry = async () => {
+      try {
+        setErrorMsg(null);
+        const { data, error } = await supabase
+          .from("participants")
+          .select(`id, name, chest_no, teams ( name, color )`)
+          .order("name", { ascending: true });
+
+        if (error) throw new Error(error.message);
+
+        setParticipants(data || []);
+      } catch (err: any) {
+        console.error("Critical Fetch Error:", err);
+        setErrorMsg(err.message || "An unknown error occurred while fetching the registry.");
+      } finally {
+        setLoading(false);
       }
-      prevPoints = pts;
-      return { ...team, rank: currentRank };
-    });
-    const rankCounts = ranked.reduce((acc: any, t: any) => {
-      acc[t.rank] = (acc[t.rank] || 0) + 1;
-      return acc;
-    }, {});
-    return ranked.map((t) => ({ ...t, isTie: rankCounts[t.rank] > 1 }));
-  };
+    };
 
-  const rankedGeneral = useMemo(() => rankTeams(data.general), [data.general]);
-  const rankedHifz = useMemo(() => rankTeams(data.hifz), [data.hifz]);
+    fetchRegistry();
+  }, []);
 
-  // ⚡ Dynamically build the array format required by TypeAnimation
-  const typeSequence = useMemo(() => {
-    const seq: (string | number)[] = [];
-    data.themeTexts.forEach((text: string, index: number) => {
-      seq.push(text);
-      // Wait 1.5s between words, but 3s on the final word
-      seq.push(index === data.themeTexts.length - 1 ? 3000 : 1500); 
-    });
-    return seq;
-  }, [data.themeTexts]);
+  // ⚡ SMART FILTER ENGINE
+  const displayedResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
 
-  const scrollAnimation: any = {
-    initial: { opacity: 0, y: 60, scale: 0.95, filter: "blur(15px)" },
-    whileInView: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
-    viewport: { once: true, margin: "-50px" },
-    transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
-  };
+    const q = searchQuery.toLowerCase().trim();
+    
+    return participants.filter((p) => {
+      const nameMatch = isFuzzyMatch(searchQuery, p.name);
+      const teamMatch = p.teams?.name ? isFuzzyMatch(searchQuery, p.teams.name) : false;
+      const chestMatch = p.chest_no && String(p.chest_no).toLowerCase().includes(q);
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#050505] text-zinc-400 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-hidden relative">
-      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
+      return nameMatch || teamMatch || chestMatch;
+    }).slice(0, 50); // Limit to top 50 to keep UI lightning fast
+  }, [participants, searchQuery]);
 
-      <div className="max-w-7xl mx-auto mt-20 md:mt-24 space-y-20 md:space-y-32 w-full px-4 sm:px-6 pb-36 md:pb-20 relative z-10">
-        
-        {/* --- 1. HERO SECTION --- */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 40, filter: "blur(20px)" }}
-          animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center space-y-6 md:space-y-8 py-10 md:py-24 bg-zinc-900/40 border border-white/5 rounded-[2rem] shadow-2xl relative overflow-hidden backdrop-blur-xl"
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-
-          {/* 🟢 DYNAMIC ESSENZA LOGO */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5, filter: "blur(10px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            transition={{ delay: 0.4, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="mx-auto w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 mb-4 md:mb-6 relative z-10"
+  // ⚡ ERROR CRASH SCREEN
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="bg-red-500/10 border border-red-500/50 p-8 rounded-3xl max-w-lg w-full text-center shadow-[0_0_50px_rgba(239,68,68,0.2)] backdrop-blur-xl relative z-10">
+          <ShieldAlert className="w-16 h-16 mx-auto mb-6 text-red-500" />
+          <h2 className="text-2xl font-black text-red-400 mb-2 uppercase tracking-widest">Registry Error</h2>
+          <p className="text-red-200/80 font-mono text-sm mb-6">{errorMsg}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all"
           >
-            <div className="w-full h-full rounded-2xl bg-black/60 border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] backdrop-blur-xl group hover:border-indigo-500/50 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all duration-500 overflow-hidden cursor-pointer">
-              {data.logoUrl ? (
-                <img
-                  src={data.logoUrl}
-                  alt="Essenza Logo"
-                  className="w-full h-full object-contain p-2 md:p-3 group-hover:scale-110 transition-transform duration-700"
-                />
-              ) : (
-                <span className="text-[10px] sm:text-xs font-black text-zinc-500 uppercase tracking-widest text-center group-hover:text-indigo-400 transition-colors leading-tight">
-                  Essenza
-                  <br />
-                  Logo
-                </span>
-              )}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="flex items-center justify-center relative z-10 mb-2"
-          >
-            <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em]">
-                Live Feed Active
-              </span>
-            </div>
-          </motion.div>
-
-          {/* ⚡ DYNAMIC THEME HEADER */}
-          <div className="flex items-center justify-center min-h-[60px] md:min-h-[120px] w-full relative z-10 px-2">
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500 drop-shadow-sm uppercase">
-              {/* Only render when loading is done to ensure the sequence doesn't break */}
-              {!loading && typeSequence.length > 0 && (
-                <TypeAnimation
-                  key={typeSequence.join('-')} 
-                  sequence={typeSequence}
-                  wrapper="span"
-                  speed={50}
-                  repeat={0}
-                />
-              )}
-            </h1>
-          </div>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 1 }}
-            className="text-sm sm:text-base md:text-xl leading-relaxed text-zinc-400 max-w-2xl mx-auto px-6 relative z-10 font-medium pt-2 md:pt-4"
-          >
-            The ultimate battle of minds. Track live scores, view schedules, and
-            cheer for your favorite teams in real-time.
-          </motion.p>
-
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 pt-4 md:pt-8 px-6 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, x: -20, filter: "blur(10px)" }}
-              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-              transition={{ delay: 0.9, duration: 0.7, ease: "easeOut" }}
-              className="w-full sm:w-auto"
-            >
-              <Link
-                href="#leaderboard"
-                className="group bg-indigo-600 text-white font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-indigo-500 transition-all active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.3)] hover:shadow-[0_0_40px_rgba(79,70,229,0.5)] flex items-center gap-2"
-              >
-                <TrendingUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />{" "}
-                Live Leaderboard
-              </Link>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, x: 20, filter: "blur(10px)" }}
-              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-              transition={{ delay: 1, duration: 0.7, ease: "easeOut" }}
-              className="w-full sm:w-auto"
-            >
-              <Link
-                href="/search"
-                className="group bg-white/5 text-zinc-300 border border-white/10 font-black uppercase tracking-widest text-xs px-8 py-4 md:py-3 min-h-[50px] w-full sm:w-auto justify-center rounded-xl hover:bg-white/10 hover:text-white transition-all active:scale-95 backdrop-blur-sm flex items-center gap-2 hover:border-white/20"
-              >
-                <Search className="w-4 h-4 group-hover:rotate-12 transition-transform" />{" "}
-                Find Participant
-              </Link>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* --- 2. LIVE COUNTDOWN --- */}
-        <motion.section {...scrollAnimation} className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/30 to-purple-600/30 rounded-[2rem] blur-2xl opacity-40 group-hover:opacity-80 transition duration-1000" />
-          <div className="relative bg-[#0a0a0a]/80 border border-white/10 rounded-[2rem] p-6 sm:p-10 md:p-20 text-center shadow-2xl overflow-hidden backdrop-blur-xl transition-transform duration-700 hover:scale-[1.01]">
-            <div className="flex flex-col items-center">
-              <span className="flex items-center gap-2 px-4 md:px-5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] md:text-xs font-black uppercase tracking-[0.3em] mb-6 md:mb-10 shadow-inner">
-                <Rocket className="w-3 h-3 md:w-4 md:h-4" /> Grand Result Declaration
-              </span>
-              <Countdown targetDate="2026-09-23T19:00:00" />
-            </div>
-          </div>
-        </motion.section>
-
-        {/* --- 3. LIVE STATS --- */}
-        <motion.section {...scrollAnimation}>
-          <div className="mb-6 md:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-2 md:gap-4 px-2">
-            <div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white">
-                Fest by <span className="text-indigo-500 italic">Numbers</span>
-              </h2>
-            </div>
-          </div>
-          <StatsSection stats={data.stats} />
-        </motion.section>
-
-        {/* --- 4. DUAL LEADERBOARD --- */}
-        <motion.section
-          {...scrollAnimation}
-          id="leaderboard"
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8"
-        >
-          {/* 🟢 GENERAL CHAMPIONSHIP */}
-          <div className="lg:col-span-2 bg-zinc-900/40 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl border border-white/5 backdrop-blur-xl relative overflow-hidden group">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-indigo-500/5 blur-[100px] pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-1000" />
-
-            <div className="flex items-center justify-between mb-6 md:mb-10 relative z-10">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="p-2.5 md:p-3 bg-black/50 border border-white/10 rounded-xl shadow-inner shrink-0">
-                  <Trophy className="text-yellow-500 w-5 h-5 md:w-8 md:h-8" />
-                </div>
-                <div>
-                  <h3 className="text-xl sm:text-3xl md:text-4xl font-black tracking-tighter text-white leading-none">
-                    General Championship
-                  </h3>
-                  <p className="text-[9px] md:text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] mt-1">
-                    Main Event Leaderboard
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 relative z-10 flex flex-col">
-              {loading ? (
-                <div className="animate-pulse space-y-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-20 md:h-24 bg-white/5 rounded-2xl w-full" />
-                  ))}
-                </div>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {rankedGeneral.map((team: any, index: number) => {
-                    const animationKey = team.id || team.name || team.team || index;
-                    const isFirst = team.rank === 1;
-
-                    return (
-                      <motion.div
-                        key={animationKey}
-                        layout="position"
-                        initial={{ opacity: 0, scale: 0.9, x: -30, filter: "blur(10px)" }}
-                        animate={{ opacity: 1, scale: 1, x: 0, filter: "blur(0px)" }}
-                        exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)" }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 350,
-                          damping: 30,
-                          delay: index * 0.1, 
-                        }}
-                        className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-6 md:p-8 rounded-2xl border backdrop-blur-md overflow-hidden transition-all gap-4 sm:gap-0 ${
-                          isFirst
-                            ? "bg-[#0a0a0a] shadow-2xl z-20 hover:scale-[1.02] duration-300"
-                            : "bg-black/40 border-white/5 hover:bg-white/[0.04] z-10"
-                        }`}
-                        style={{
-                          borderColor: team.color,
-                          boxShadow: isFirst ? `0 0 40px ${team.color}25` : undefined,
-                        }}
-                      >
-                        <div
-                          className="absolute left-0 top-0 bottom-0 w-1.5 md:w-2 opacity-90"
-                          style={{ backgroundColor: team.color }}
-                        />
-
-                        <div className="flex items-center gap-4 md:gap-6 pl-2 sm:pl-3 w-full sm:w-auto">
-                          <div
-                            className="w-12 h-12 md:w-14 md:h-14 flex flex-col items-center justify-center rounded-xl font-black text-lg md:text-xl shadow-inner shrink-0 leading-none"
-                            style={{
-                              backgroundColor: isFirst ? team.color : "#18181b",
-                              color: isFirst ? "#fff" : team.color,
-                            }}
-                          >
-                            {isFirst ? (
-                              <>
-                                <Crown className="w-5 h-5 md:w-6 md:h-6" />
-                                {team.isTie && (
-                                  <span className="text-[6px] md:text-[7px] uppercase tracking-widest mt-0.5 opacity-80 leading-none">
-                                    Tie
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <span>#{team.rank}</span>
-                                {team.isTie && (
-                                  <span
-                                    className="text-[5px] sm:text-[6px] uppercase tracking-widest mt-1 opacity-90"
-                                    style={{ color: team.color }}
-                                  >
-                                    Tie
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </div>
-
-                          <div className="truncate">
-                            <h3
-                              className={`text-xl md:text-2xl font-bold tracking-tight uppercase truncate ${
-                                isFirst ? "text-white" : "text-zinc-300"
-                              }`}
-                            >
-                              {team.name || team.team}
-                            </h3>
-                          </div>
-                        </div>
-
-                        <div className="w-full sm:w-auto flex items-center justify-between sm:block border-t border-white/5 pt-3 mt-1 sm:border-0 sm:pt-0 sm:mt-0 sm:text-right shrink-0">
-                          <p className="sm:hidden text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">
-                            Total Points
-                          </p>
-                          <div className="text-right">
-                            <motion.div
-                              key={team.total_points}
-                              initial={{ color: team.color, scale: 1.2 }}
-                              animate={{
-                                color: isFirst ? "#ffffff" : "#d4d4d8",
-                                scale: 1,
-                              }}
-                              className="text-3xl sm:text-4xl md:text-5xl font-black tabular-nums tracking-tighter leading-none"
-                            >
-                              {team.total_points}
-                            </motion.div>
-                            <p className="hidden sm:block text-[8px] md:text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mt-1 md:mt-2">
-                              Total Points
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              )}
-            </div>
-          </div>
-
-          {/* 🟣 HIFZ SPECIAL CATEGORY */}
-          <div className="bg-indigo-950/20 p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-2xl flex flex-col justify-between overflow-hidden relative border border-indigo-500/20 backdrop-blur-xl group hover:border-indigo-500/40 transition-colors duration-500">
-            <Zap className="absolute -top-10 -right-10 w-40 h-40 text-indigo-500/10 rotate-12 pointer-events-none group-hover:text-indigo-500/20 transition-colors duration-700 group-hover:scale-110 group-hover:rotate-[24deg]" />
-            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-indigo-900/20 to-transparent pointer-events-none" />
-
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3 text-indigo-400 border border-indigo-500/20 bg-indigo-500/10 w-fit px-4 py-1.5 rounded-xl shadow-inner">
-                <Zap className="w-3 h-3 fill-current" />
-                <span className="font-black uppercase tracking-widest text-[8px] md:text-[9px]">
-                  Special Category
-                </span>
-              </div>
-              <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tighter uppercase">
-                Hifz Duel
-              </h3>
-            </div>
-
-            <div className="h-[200px] sm:h-[260px] md:h-[280px] mt-6 md:mt-8 relative z-10 flex items-center justify-center">
-              {loading ? (
-                <div className="animate-pulse w-32 h-32 md:w-48 md:h-48 bg-indigo-900/30 rounded-full border-4 border-indigo-500/10"></div>
-              ) : (
-                <TeamChart data={rankedHifz} type="pie" isDark={true} />
-              )}
-            </div>
-
-            <div className="relative z-10 mt-6 grid grid-cols-2 gap-3 md:gap-4">
-              {rankedHifz.slice(0, 2).map((team: any) => {
-                const isFirst = team.rank === 1;
-
-                return (
-                  <div
-                    key={team.id || team.team}
-                    className="bg-black/40 border p-4 rounded-2xl text-center relative overflow-hidden transition-all hover:bg-white/5 hover:scale-105 duration-300"
-                    style={{ borderColor: team.color }}
-                  >
-                    {isFirst && team.isTie && (
-                      <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[5px] font-black uppercase px-2 py-1 rounded-bl-xl z-20 shadow-md">
-                        Tie
-                      </div>
-                    )}
-                    <p
-                      className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-500"
-                      style={{ color: team.color }}
-                    >
-                      {team.name || team.team}
-                    </p>
-                    <p className="text-xl md:text-2xl font-black text-white mt-1">
-                      {team.total_points}{" "}
-                      <span className="text-[8px] text-zinc-600 uppercase">
-                        Pts
-                      </span>
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.section>
-
-        {/* --- 5. LOGIC-LOCKED TEAM COMPARISON --- */}
-        <motion.section {...scrollAnimation}>
-          <div className="mb-6 md:mb-12 text-center md:text-left px-2">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-black/50 text-zinc-300 text-[9px] md:text-[10px] font-black uppercase tracking-widest mb-3 border border-white/10 shadow-inner">
-              <TrendingUp className="w-3 h-3 text-indigo-400" /> Data Intelligence
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-white uppercase">
-              Head-to-Head <span className="text-zinc-600">Stats</span>
-            </h2>
-          </div>
-          <TeamComparison />
-        </motion.section>
-
-        {/* --- 6. CATEGORY TOPPERS (Hall of Fame) --- */}
-        <motion.section {...scrollAnimation} id="toppers" className="relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[120%] bg-yellow-500/5 blur-[120px] pointer-events-none rounded-[2rem]" />
-
-          <div className="text-center mb-8 md:mb-16 relative z-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-black/80 border border-yellow-500/20 text-yellow-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] mb-4 shadow-[0_0_20px_rgba(234,179,8,0.15)]">
-              <Award className="w-3 h-3 md:w-4 md:h-4" /> Hall of Fame
-            </div>
-            <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tighter text-white uppercase px-2">
-              Category{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">
-                Champions
-              </span>
-            </h2>
-          </div>
-
-          <div className="relative z-10">
-            {loading ? (
-              <div className="h-64 animate-pulse bg-zinc-900/30 border border-white/5 rounded-[2rem] backdrop-blur-xl"></div>
-            ) : (
-              <CategoryToppers toppers={data.toppers} />
-            )}
-          </div>
-        </motion.section>
-      </div>
-
-      <Footer />
-
-      {/* 📱 PREMIUM MOBILE NAVIGATION PILL (Floating Dynamic Island Style) */}
-      <div className="fixed bottom-6 left-4 right-4 z-50 md:hidden flex justify-center pointer-events-none pb-safe">
-        <div className="bg-[#0a0a0a]/80 backdrop-blur-3xl border border-white/10 p-2 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] pointer-events-auto flex items-center gap-1 w-full max-w-[340px] justify-between">
-          <Link
-            href="#leaderboard"
-            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-indigo-400 group"
-          >
-            <Trophy className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              Rank
-            </span>
-          </Link>
-          
-          <div className="w-px h-8 bg-white/10" />
-          
-          <Link
-            href="/search"
-            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-indigo-400 group"
-          >
-            <Search className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              Search
-            </span>
-          </Link>
-          
-          <div className="w-px h-8 bg-white/10" />
-          
-          <Link
-            href="#toppers"
-            className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 active:scale-95 transition-all duration-200 text-zinc-500 hover:text-yellow-500 group"
-          >
-            <Award className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              Toppers
-            </span>
-          </Link>
+            Reboot Interface
+          </button>
         </div>
       </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center space-y-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20 pointer-events-none" />
+        <div className="relative flex items-center justify-center">
+          <div className="absolute inset-0 bg-indigo-500 blur-[80px] opacity-30 animate-pulse" />
+          <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-400 rounded-full animate-spin relative z-10" />
+          <Zap className="w-6 h-6 text-indigo-400 absolute animate-pulse z-10" />
+        </div>
+        <p className="text-indigo-400 font-mono uppercase tracking-[0.5em] text-[10px] animate-pulse drop-shadow-md text-center px-4 relative z-10">
+          Indexing Registry
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#030303] text-zinc-300 selection:bg-indigo-500/30 selection:text-white font-sans pb-32 relative overflow-hidden flex flex-col">
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none mix-blend-screen" />
+
+      <main className="max-w-4xl mx-auto pt-24 md:pt-32 px-4 md:px-6 w-full relative z-10 flex-1 flex flex-col">
+        
+        {/* HEADER & SEARCH BAR */}
+        <div className="text-center mb-8 md:mb-12 animate-in fade-in slide-in-from-top-8 duration-700">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white mb-6 uppercase">
+            Participant <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Search</span>
+          </h1>
+
+          <div className="relative group/search w-full max-w-2xl mx-auto">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within/search:text-indigo-400 transition-colors" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, team, or chest no..." 
+              className="w-full bg-black/80 backdrop-blur-3xl border border-white/10 focus:border-indigo-500/50 focus:bg-black text-white placeholder-zinc-600 rounded-2xl md:rounded-[2rem] py-5 md:py-6 pl-14 pr-16 outline-none transition-all shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] focus:shadow-[0_0_40px_rgba(99,102,241,0.2)] text-base md:text-lg font-bold tracking-wide"
+            />
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center">
+              {searchQuery ? (
+                <button onClick={() => setSearchQuery('')} className="p-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              ) : (
+                <span className="hidden md:flex items-center justify-center px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 text-[10px] font-mono font-bold text-zinc-500">
+                  ⌘K
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RESULTS AREA */}
+        <div className="flex-1 w-full max-w-2xl mx-auto relative">
+          {!searchQuery.trim() ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center opacity-50 py-20 animate-in fade-in duration-1000">
+              <Users className="w-16 h-16 mb-6 text-zinc-700" />
+              <p className="text-xl font-bold text-zinc-500 tracking-tight">Access the Essenza Registry</p>
+              <p className="text-sm font-mono uppercase tracking-[0.2em] text-zinc-600 mt-2">Find anyone instantly.</p>
+            </div>
+          ) : displayedResults.length === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center py-20 animate-in fade-in zoom-in-95">
+              <ShieldAlert className="w-16 h-16 mb-6 text-indigo-900/50" />
+              <p className="text-xl font-bold text-zinc-400 tracking-tight">No participants found</p>
+              <p className="text-sm font-mono uppercase tracking-[0.2em] text-zinc-600 mt-2">Try checking the spelling.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 pb-20">
+              <AnimatePresence>
+                {displayedResults.map((participant, idx) => {
+                  const teamColor = participant.teams?.color || "#6366f1";
+                  const teamName = participant.teams?.name || "Independent";
+
+                  return (
+                    <motion.div
+                      key={participant.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2, delay: idx * 0.02 }}
+                      className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 rounded-2xl bg-[#0a0a0a]/80 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] backdrop-blur-xl transition-all shadow-lg overflow-hidden relative"
+                    >
+                      {/* Left Accent Bar */}
+                      <div 
+                        className="absolute left-0 top-0 bottom-0 w-1.5 opacity-80"
+                        style={{ backgroundColor: teamColor }}
+                      />
+
+                      <div className="flex items-start sm:items-center gap-4 pl-2 w-full sm:w-auto">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+                          <User className="w-5 h-5 text-zinc-500" />
+                        </div>
+                        <div className="flex flex-col truncate">
+                          <h3 className="text-lg md:text-xl font-bold text-white tracking-tight truncate">
+                            {participant.name}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                              <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: teamColor }} />
+                              {teamName}
+                            </span>
+                            {participant.chest_no && (
+                              <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 px-2 py-1">
+                                <Hash className="w-3 h-3" />
+                                {participant.chest_no}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:flex items-center shrink-0 ml-4">
+                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-zinc-600 group-hover:bg-white/10 group-hover:text-white transition-all">
+                          <ChevronRight className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
