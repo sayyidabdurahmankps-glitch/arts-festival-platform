@@ -109,12 +109,7 @@ export default function CategorizedResultsBoard() {
       .select(`id, code, name, category, event_type, event_mode, results (id, points, grade, position, status, participants ( name, teams ( name, color ) ), teams ( name, color ))`)
       .order("name", { ascending: true });
 
-    // ⚡ CRITICAL FIX: Turn off the loading spinner if there is an error
-    if (error) {
-      console.error("Supabase Database Error:", error.message);
-      setLoading(false); 
-      return; 
-    }
+    if (error) return console.error("Failed to sync matrix:", error);
 
     const processedEvents = (data as unknown as EventWithResults[])
       .map((evt) => ({
@@ -128,8 +123,6 @@ export default function CategorizedResultsBoard() {
       const categories = Array.from(new Set(processedEvents.map((e) => e.category)));
       setActiveCategory((prev) => categories.includes(prev) ? prev : categories[0]);
     }
-    
-    // ⚡ ALWAYS TURN OFF LOADING
     setLoading(false);
   };
 
@@ -178,7 +171,7 @@ export default function CategorizedResultsBoard() {
       <div className="min-h-screen bg-[#030303] flex flex-col items-center justify-center space-y-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20 pointer-events-none" />
         <div className="relative flex items-center justify-center">
-          <div className="absolute inset-0 bg-indigo-50 blur-[80px] opacity-30 animate-pulse" />
+          <div className="absolute inset-0 bg-indigo-500 blur-[80px] opacity-30 animate-pulse" />
           <div className="w-16 h-16 border-2 border-indigo-500/20 border-t-indigo-400 rounded-full animate-spin relative z-10" />
           <Zap className="w-6 h-6 text-indigo-400 absolute animate-pulse z-10" />
         </div>
