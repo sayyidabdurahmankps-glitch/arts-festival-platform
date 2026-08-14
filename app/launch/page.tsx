@@ -11,22 +11,13 @@ import {
   Activity,
   Server,
   Fingerprint,
-  Check,
-  Lock,
-  Unlock,
-  Delete
+  Check
 } from "lucide-react";
-
-const VIP_PIN = "2026"; // ⚡ Define the secure passcode here
 
 export default function LaunchPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   
-  const [pin, setPin] = useState("");
-  const [pinError, setPinError] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
-
   const [bootStage, setBootStage] = useState(0);
   const [isBooting, setIsBooting] = useState(false);
   const [isLaunched, setIsLaunched] = useState(false);
@@ -35,38 +26,8 @@ export default function LaunchPage() {
     setIsMounted(true);
   }, []);
 
-  // Handle Numpad Interaction (Optimized for large touch targets)
-  const handlePinPress = (digit: string) => {
-    if (pin.length >= 4 || isUnlocked || isBooting) return;
-    
-    if (digit === "C") {
-      setPin("");
-      return;
-    }
-    
-    if (digit === "DEL") {
-      setPin((prev) => prev.slice(0, -1));
-      return;
-    }
-
-    const newPin = pin + digit;
-    setPin(newPin);
-
-    if (newPin.length === 4) {
-      if (newPin === VIP_PIN) {
-        setTimeout(() => setIsUnlocked(true), 600);
-      } else {
-        setPinError(true);
-        setTimeout(() => {
-          setPin("");
-          setPinError(false);
-        }, 800);
-      }
-    }
-  };
-
   const handleGuestLaunch = async () => {
-    if (isBooting || isLaunched || !isUnlocked) return;
+    if (isBooting || isLaunched) return;
     setIsBooting(true);
 
     await new Promise((res) => setTimeout(res, 1000));
@@ -96,8 +57,8 @@ export default function LaunchPage() {
 
       {/* --- Deep Ambient Background --- */}
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#050505]/80 to-[#050505] z-0 pointer-events-none" />
-      <div className={`fixed top-[-20%] left-[-10%] w-[60%] h-[60%] blur-[150px] pointer-events-none rounded-[4rem] transition-colors duration-1000 ${isUnlocked ? 'bg-indigo-600/20' : 'bg-red-600/10'}`} />
-      <div className={`fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] blur-[150px] pointer-events-none rounded-[4rem] transition-colors duration-1000 ${isUnlocked ? 'bg-purple-600/20' : 'bg-orange-600/10'}`} />
+      <div className={`fixed top-[-20%] left-[-10%] w-[60%] h-[60%] blur-[150px] pointer-events-none rounded-[4rem] transition-colors duration-1000 ${isBooting ? 'bg-indigo-600/20' : 'bg-indigo-600/10'}`} />
+      <div className={`fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] blur-[150px] pointer-events-none rounded-[4rem] transition-colors duration-1000 ${isBooting ? 'bg-purple-600/20' : 'bg-purple-600/10'}`} />
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff05_2px,transparent_2px),linear-gradient(to_bottom,#ffffff05_2px,transparent_2px)] bg-[size:6rem_6rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
       {/* --- Global Success Flash --- */}
@@ -116,14 +77,12 @@ export default function LaunchPage() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        // ⚡ Expanded width/height for Interactive Flat Panels (Smart Boards)
         className="relative z-10 w-[96vw] h-[94vh] max-w-[1920px] bg-[#0a0a0a]/95 border border-white/5 rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] backdrop-blur-3xl overflow-hidden flex flex-col"
       >
         {/* Top Terminal Bar (Super-Sized) */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-black/40">
           <div className="flex items-center gap-4">
             <div className="flex gap-2.5">
-              {/* ⚡ Strict Squircle Traffic Lights */}
               <div className="w-4 h-4 rounded-md bg-red-500/20 border border-red-500/50" />
               <div className="w-4 h-4 rounded-md bg-yellow-500/20 border border-yellow-500/50" />
               <div className="w-4 h-4 rounded-md bg-emerald-500/20 border border-emerald-500/50" />
@@ -131,13 +90,13 @@ export default function LaunchPage() {
             <div className="w-px h-6 bg-white/10 mx-3" />
             <Terminal className="w-6 h-6 text-zinc-500" />
             <span className="text-sm md:text-lg font-mono uppercase tracking-[0.2em] text-zinc-400 truncate">
-              {isUnlocked ? "FestOS // Mainframe_Unlocked" : "FestOS // Awaiting_Clearance"}
+              FestOS // Launch_Protocol
             </span>
           </div>
           
           <div className="flex items-center gap-3 shrink-0">
             <span className="text-sm md:text-base font-black uppercase tracking-widest text-zinc-600 hidden sm:block">Status</span>
-            <div className={`w-4 h-4 rounded-md ${isLaunched ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : !isUnlocked ? 'bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse' : 'bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)] animate-pulse'} transition-colors duration-500`} />
+            <div className={`w-4 h-4 rounded-md ${isLaunched ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : isBooting ? 'bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)] animate-pulse' : 'bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)] animate-pulse'} transition-colors duration-500`} />
           </div>
         </div>
 
@@ -145,65 +104,8 @@ export default function LaunchPage() {
         <div className="flex-1 p-6 sm:p-12 md:p-16 text-center flex flex-col items-center relative overflow-hidden justify-center">
           
           <AnimatePresence mode="wait">
-            {!isUnlocked ? (
-              /* --- SECURITY PIN STATE --- */
-              <motion.div
-                key="security-pin"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-                className="flex flex-col items-center w-full max-w-2xl mx-auto"
-              >
-                <div className="mb-8 px-6 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm md:text-base font-black uppercase tracking-[0.3em] flex items-center gap-3 shadow-inner">
-                  <Lock className="w-5 h-5" />
-                  Restricted Access
-                </div>
-
-                <h2 className="text-4xl md:text-6xl font-black text-white tracking-tighter mb-12 uppercase">
-                  Enter Auth <span className="text-red-500">Code</span>
-                </h2>
-
-                {/* PIN Display Squircles */}
-                <motion.div 
-                  className="flex justify-center gap-6 mb-16"
-                  animate={pinError ? { x: [-15, 15, -15, 15, -10, 10, 0] } : {}}
-                  transition={{ duration: 0.4 }}
-                >
-                  {[...Array(4)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      // ⚡ Strict Squircle format instead of full circles
-                      className={`w-8 h-8 md:w-10 md:h-10 rounded-xl border-4 transition-all duration-300 ${
-                        pinError 
-                          ? 'border-red-500 bg-red-500 shadow-[0_0_25px_rgba(239,68,68,0.5)]' 
-                          : i < pin.length 
-                            ? 'border-indigo-500 bg-indigo-500 shadow-[0_0_25px_rgba(99,102,241,0.5)] scale-110' 
-                            : 'border-white/10 bg-transparent'
-                      }`} 
-                    />
-                  ))}
-                </motion.div>
-
-                {/* Massive Smart Board Numpad */}
-                <div className="grid grid-cols-3 gap-6 md:gap-8 w-full px-4">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', 'DEL'].map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => handlePinPress(key)}
-                      className={`h-24 md:h-28 rounded-[1.5rem] md:rounded-[2rem] border-2 transition-all active:scale-95 flex items-center justify-center text-4xl md:text-5xl font-bold ${
-                        key === 'C' || key === 'DEL' 
-                          ? 'bg-black/50 border-white/5 text-zinc-500 hover:text-white hover:bg-white/10' 
-                          : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      {key === 'DEL' ? <Delete className="w-10 h-10" /> : key}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-
-            ) : !isBooting ? (
-              /* --- UNLOCKED / PRE-LAUNCH STATE --- */
+            {!isBooting ? (
+              /* --- PRE-LAUNCH STATE --- */
               <motion.div
                 key="pre-launch"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -216,8 +118,8 @@ export default function LaunchPage() {
                   transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                   className="mb-10 px-6 md:px-8 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm md:text-base font-black uppercase tracking-[0.3em] flex items-center gap-3 shadow-[0_0_30px_rgba(99,102,241,0.15)]"
                 >
-                  <Unlock className="w-5 h-5" />
-                  VIP Authorization Verified
+                  <Fingerprint className="w-5 h-5" />
+                  Awaiting VIP Authorization
                 </motion.div>
 
                 <h1 className="text-7xl md:text-9xl lg:text-[10rem] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 mb-6">
