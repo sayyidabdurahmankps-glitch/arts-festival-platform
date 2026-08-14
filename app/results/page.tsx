@@ -17,7 +17,7 @@ type Result = {
 
 type EventWithResults = {
   id: string;
-  code: string; // ⚡ ADDED EVENT CODE
+  event_code: string; // ⚡ FIXED: Matched to your SQL schema (event_code)
   name: string;
   category: string;
   event_type: string;
@@ -103,13 +103,17 @@ export default function CategorizedResultsBoard() {
   }, []);
 
   const fetchEventResults = async () => {
-    // ⚡ ADDED "code" TO SELECT QUERY
+    // ⚡ FIXED: Now querying "event_code" as defined in your DB
     const { data, error } = await supabase
       .from("events")
-      .select(`id, code, name, category, event_type, event_mode, results (id, points, grade, position, status, participants ( name, teams ( name, color ) ), teams ( name, color ))`)
+      .select(`id, event_code, name, category, event_type, event_mode, results (id, points, grade, position, status, participants ( name, teams ( name, color ) ), teams ( name, color ))`)
       .order("name", { ascending: true });
 
-    if (error) return console.error("Failed to sync matrix:", error);
+    if (error) {
+      console.error("Supabase Database Error:", error.message);
+      setLoading(false); 
+      return; 
+    }
 
     const processedEvents = (data as unknown as EventWithResults[])
       .map((evt) => ({
@@ -123,12 +127,13 @@ export default function CategorizedResultsBoard() {
       const categories = Array.from(new Set(processedEvents.map((e) => e.category)));
       setActiveCategory((prev) => categories.includes(prev) ? prev : categories[0]);
     }
+    
     setLoading(false);
   };
 
   const availableCategories = useMemo(() => Array.from(new Set(events.map((e) => e.category))).sort(), [events]);
   
-  // ⚡ SMART FILTER ENGINE (Handles Categories + Codes + Fuzzy Search)
+  // ⚡ SMART FILTER ENGINE (Handles Categories + Event Codes + Fuzzy Search)
   const displayedEvents = useMemo(() => {
     let filtered = events.filter((e) => e.category === activeCategory);
 
@@ -136,8 +141,8 @@ export default function CategorizedResultsBoard() {
       const q = searchQuery.toLowerCase().trim();
       
       filtered = filtered.map(event => {
-        // ⚡ CHECK FOR EXACT/PARTIAL 3-DIGIT CODE MATCH
-        const matchesCode = event.code && String(event.code).toLowerCase().includes(q);
+        // ⚡ CHECK FOR EXACT/PARTIAL EVENT CODE MATCH
+        const matchesCode = event.event_code && String(event.event_code).toLowerCase().includes(q);
 
         // If Event Name OR Event Code matches the search, show ALL results inside it
         if (matchesCode || isFuzzyMatch(searchQuery, event.name)) {
@@ -225,7 +230,7 @@ export default function CategorizedResultsBoard() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search code, event, name..." // ⚡ Updated placeholder
+                  placeholder="Search code, event, name..." 
                   className="w-full bg-black/80 backdrop-blur-3xl border border-white/10 focus:border-indigo-500/50 focus:bg-black text-white placeholder-zinc-600 rounded-full py-4 pl-12 pr-12 outline-none transition-all shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] focus:shadow-[0_0_30px_rgba(99,102,241,0.2)] text-[13px] font-bold tracking-wide"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
@@ -281,8 +286,8 @@ export default function CategorizedResultsBoard() {
                     >
                       <div className="p-5 md:p-6 pb-4 md:pb-5 border-b border-white/[0.05] mb-2 md:mb-3 relative overflow-hidden">
                         <h2 className="text-xl md:text-2xl lg:text-3xl font-black text-white tracking-tight leading-tight mb-4 md:mb-5 group-hover:text-indigo-100 transition-colors relative z-10 drop-shadow-md">
-                          {/* ⚡ DISPLAY EVENT CODE */}
-                          {event.code && <span className="text-indigo-500/80 mr-2 md:mr-3 font-mono">#{event.code}</span>}
+                          {/* ⚡ DISPLAY EVENT CODE DIRECTLY ON THE CARD */}
+                          {event.event_code && <span className="text-indigo-500/80 mr-2 md:mr-3 font-mono">#{event.event_code}</span>}
                           {event.name}
                         </h2>
                         
