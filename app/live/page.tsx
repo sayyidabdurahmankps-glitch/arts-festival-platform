@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Zap, Trophy, Loader2, Crown, Activity } from "lucide-react";
-import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 // --- TYPES ---
 type TeamStats = {
@@ -13,31 +14,39 @@ type TeamStats = {
   team?: string;
   total_points: number;
   color?: string;
+  rank?: number;
+  isTie?: boolean;
+  isFirst?: boolean;
 };
 
-// ⚡ COUNTING ANIMATION COMPONENT
-function AnimatedCounter({ value }: { value: number }) {
-  const count = useMotionValue(0);
-  const rounded = useTransform(count, Math.round);
-
-  useEffect(() => {
-    // Animates the number from its current state to the new value
-    const animation = animate(count, value, { 
-      duration: 1.5, 
-      ease: "easeOut" 
-    });
-    return animation.stop;
-  }, [value, count]);
-
-  return <motion.span>{rounded}</motion.span>;
-}
+// ⚡ RANKING ENGINE: Mathematically calculates true ranks and detects ties
+const processRankings = (data: any[]): TeamStats[] => {
+  let currentRank = 1;
+  return data.map((item, index, arr) => {
+    // Standard competition ranking (1st, 1st, 3rd, 4th)
+    if (index > 0 && item.total_points < arr[index - 1].total_points) {
+      currentRank = index + 1;
+    }
+    
+    // Check if points match the previous OR next item in the array
+    const isTie = 
+      (index > 0 && item.total_points === arr[index - 1].total_points) ||
+      (index < arr.length - 1 && item.total_points === arr[index + 1].total_points);
+      
+    return { 
+      ...item, 
+      rank: currentRank, 
+      isTie, 
+      isFirst: currentRank === 1 
+    };
+  });
+};
 
 export default function LiveProjector() {
   const [general, setGeneral] = useState<TeamStats[]>([]);
   const [hifz, setHifz] = useState<TeamStats[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ⚡ BULLETPROOF FETCH ENGINE
   const fetchLeaderboard = async () => {
     try {
       const [generalRes, hifzRes] = await Promise.all([
@@ -55,8 +64,8 @@ export default function LiveProjector() {
           .limit(2),
       ]);
 
-      if (generalRes.data) setGeneral(generalRes.data);
-      if (hifzRes.data) setHifz(hifzRes.data);
+      if (generalRes.data) setGeneral(processRankings(generalRes.data));
+      if (hifzRes.data) setHifz(processRankings(hifzRes.data));
     } catch (error) {
       console.error("Live Projector Fetch Error:", error);
     } finally {
@@ -84,7 +93,6 @@ export default function LiveProjector() {
     );
 
   return (
-    // ⚡ STRICT SCREEN LOCK
     <div className="h-screen w-full bg-[#030303] text-zinc-300 flex flex-col overflow-hidden font-sans selection:bg-indigo-500/30 relative z-50">
       
       {/* --- MINIMALIST AMBIENCE --- */}
@@ -109,14 +117,13 @@ export default function LiveProjector() {
         {/* 🟢 LEFT: GENERAL CHAMPIONSHIP */}
         <section className="flex flex-col w-full lg:w-[65%] h-full min-h-0">
           
-          <div className="h-10 lg:h-12 flex items-center gap-3 shrink-0">
+          <div className="h-10 lg:h-12 flex items-center gap-3 shrink-0 pl-2">
             <Trophy className="w-6 h-6 text-zinc-500" />
             <h2 className="text-xl lg:text-2xl font-black uppercase tracking-widest text-zinc-300">
               General Championship
             </h2>
           </div>
           
-          {/* ⚡ STRICT 4-ROW GRID: Makes all boxes perfectly identical */}
           <div className="flex-1 grid grid-rows-4 gap-4 min-h-0 pb-2">
             {general.length === 0 ? (
               <div className="row-span-4 flex flex-col items-center justify-center opacity-50 bg-[#0a0a0a] border border-zinc-800 rounded-3xl">
@@ -125,7 +132,7 @@ export default function LiveProjector() {
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
-                {general.map((entry, index) => {
+                {general.map((entry) => {
                   const teamColor = entry.color || "#6366f1";
                   const teamName = entry.name || entry.team_name || entry.team || "Unknown Team";
 
@@ -138,29 +145,51 @@ export default function LiveProjector() {
                       transition={{ type: "spring", stiffness: 200, damping: 25 }}
                       className="row-span-1 w-full rounded-[2rem] relative overflow-hidden flex items-center justify-between p-6 lg:p-8 bg-[#0a0a0a] border border-zinc-800 shadow-xl"
                     >
-                      {/* Top Team Color Line for EVERY box */}
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="flex items-center gap-5 lg:gap-8 w-full min-w-0">
-                        {/* Circular Rank Badge with Team Color */}
+                        {/* ⚡ THE DYNAMIC RANK BADGE */}
                         <div 
-                          className="w-12 h-12 lg:w-16 lg:h-16 rounded-full border-2 bg-black flex items-center justify-center shrink-0 shadow-lg"
+                          className={`border-2 bg-black flex flex-col items-center justify-center shrink-0 shadow-lg transition-all duration-300 ${
+                            entry.isTie 
+                              ? 'w-16 h-16 lg:w-20 lg:h-[4.5rem] rounded-[1rem] lg:rounded-[1.25rem] gap-0.5' 
+                              : 'w-12 h-12 lg:w-16 lg:h-16 rounded-full'
+                          }`}
                           style={{ borderColor: teamColor }}
                         >
-                          {index === 0 ? (
+                          {entry.isFirst ? (
                             <Crown className="w-5 h-5 lg:w-7 lg:h-7" style={{ color: teamColor }} />
                           ) : (
-                            <span className="font-black text-xl lg:text-2xl" style={{ color: teamColor }}>#{index + 1}</span>
+                            <span className={`font-black ${entry.isTie ? 'text-lg lg:text-2xl' : 'text-xl lg:text-2xl'}`} style={{ color: teamColor }}>
+                              #{entry.rank}
+                            </span>
+                          )}
+                          {entry.isTie && (
+                            <span className="font-black text-[9px] lg:text-[11px] tracking-[0.2em] uppercase leading-none" style={{ color: teamColor }}>
+                              Tie
+                            </span>
                           )}
                         </div>
-                        <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tight text-white truncate w-full pr-4">
-                          {teamName}
-                        </h3>
+
+                        <div className="flex flex-col min-w-0">
+                          {entry.isFirst && (
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <div className="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 flex items-center gap-1.5">
+                                <Crown className="w-3 h-3" style={{ color: teamColor }} />
+                                <span className="font-bold text-[8px] lg:text-[10px] tracking-[0.2em] uppercase text-zinc-300">
+                                  {entry.isTie ? "Co-Leader" : "Current Leader"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tight text-white truncate w-full pr-4">
+                            {teamName}
+                          </h3>
+                        </div>
                       </div>
 
                       <div className="flex items-end gap-2 lg:gap-3 text-right shrink-0">
                         <div className="text-5xl lg:text-[5.5rem] font-black tabular-nums tracking-tighter leading-none text-white">
-                          {/* ⚡ THE ANIMATED COUNTER */}
                           <AnimatedCounter value={entry.total_points} />
                         </div>
                         <span className="text-sm lg:text-lg font-bold uppercase text-zinc-600 tracking-[0.3em] pb-1 lg:pb-2">
@@ -193,7 +222,7 @@ export default function LiveProjector() {
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
-                {hifz.map((entry, index) => {
+                {hifz.map((entry) => {
                   const teamColor = entry.color || "#6366f1";
                   const teamName = entry.name || entry.team_name || entry.team || "Unknown Team";
 
@@ -206,16 +235,30 @@ export default function LiveProjector() {
                       transition={{ type: "spring", stiffness: 200, damping: 25 }}
                       className="row-span-1 w-full rounded-[2.5rem] flex flex-col items-center justify-center text-center relative overflow-hidden bg-[#0a0a0a] border border-zinc-800 p-6 shadow-xl"
                     >
-                      {/* Top Team Color Line for EVERY box */}
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                        {/* Circular Rank Badge */}
+                        {/* ⚡ THE DYNAMIC RANK BADGE */}
                         <div 
-                          className="w-12 h-12 lg:w-16 lg:h-16 rounded-full border-2 bg-black flex items-center justify-center mb-4 lg:mb-6 shadow-lg"
+                          className={`border-2 bg-black flex flex-col items-center justify-center mb-4 lg:mb-6 shadow-lg transition-all duration-300 ${
+                            entry.isTie 
+                              ? 'w-16 h-16 lg:w-20 lg:h-[4.5rem] rounded-[1rem] lg:rounded-[1.25rem] gap-0.5' 
+                              : 'w-12 h-12 lg:w-16 lg:h-16 rounded-full'
+                          }`}
                           style={{ borderColor: teamColor }}
                         >
-                          <span className="font-black text-xl lg:text-2xl" style={{ color: teamColor }}>#{index + 1}</span>
+                          {entry.isFirst ? (
+                            <Crown className="w-5 h-5 lg:w-7 lg:h-7" style={{ color: teamColor }} />
+                          ) : (
+                            <span className={`font-black ${entry.isTie ? 'text-lg lg:text-2xl' : 'text-xl lg:text-2xl'}`} style={{ color: teamColor }}>
+                              #{entry.rank}
+                            </span>
+                          )}
+                          {entry.isTie && (
+                            <span className="font-black text-[9px] lg:text-[11px] tracking-[0.2em] uppercase leading-none" style={{ color: teamColor }}>
+                              Tie
+                            </span>
+                          )}
                         </div>
                         
                         <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tight mb-2 w-full truncate text-white">
@@ -223,7 +266,6 @@ export default function LiveProjector() {
                         </h3>
                         
                         <div className="text-6xl lg:text-[6.5rem] font-black tabular-nums tracking-tighter leading-none mt-2 text-white">
-                          {/* ⚡ THE ANIMATED COUNTER */}
                           <AnimatedCounter value={entry.total_points} />
                         </div>
                         
