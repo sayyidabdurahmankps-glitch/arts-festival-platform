@@ -112,7 +112,7 @@ export default function LiveProjector() {
       {/* --- PERFECTLY ALIGNED DASHBOARD --- */}
       <main className="flex-1 w-full max-w-[2400px] mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 p-4 lg:p-8 min-h-0 relative z-10">
         
-        {/* 🟢 LEFT: GENERAL CHAMPIONSHIP (Reverted to 65% width) */}
+        {/* 🟢 LEFT: GENERAL CHAMPIONSHIP */}
         <section className="flex flex-col w-full lg:w-[65%] h-full min-h-0">
           
           <div className="h-10 lg:h-12 flex items-center gap-3 shrink-0 pl-2">
@@ -146,9 +146,9 @@ export default function LiveProjector() {
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="flex items-center gap-5 lg:gap-8 w-full min-w-0">
-                        {/* ⚡ BIG UNIFORM POSITION BOX FOR ALL RANKS */}
+                        {/* ⚡ MASSIVE ULTRA-WIDE POSITION BOX */}
                         <div 
-                          className="border-2 bg-black flex flex-col items-center justify-center shrink-0 shadow-lg w-20 h-14 lg:w-[120px] lg:h-[72px] rounded-xl lg:rounded-2xl gap-1"
+                          className="border-2 bg-black flex flex-col items-center justify-center shrink-0 shadow-lg w-24 h-14 lg:w-[180px] lg:h-[72px] rounded-xl lg:rounded-2xl gap-1"
                           style={{ borderColor: teamColor }}
                         >
                           {entry.isFirst ? (
@@ -232,7 +232,7 @@ export default function LiveProjector() {
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                        {/* ⚡ BIG UNIFORM POSITION BOX */}
+                        {/* ⚡ HIFZ WIDE POSITION BOX */}
                         <div 
                           className="border-2 bg-black flex flex-col items-center justify-center mb-4 lg:mb-6 shadow-lg w-20 h-14 lg:w-[120px] lg:h-[72px] rounded-xl lg:rounded-2xl gap-1"
                           style={{ borderColor: teamColor }}
