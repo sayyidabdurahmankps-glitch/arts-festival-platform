@@ -19,16 +19,14 @@ type TeamStats = {
   isFirst?: boolean;
 };
 
-// ⚡ RANKING ENGINE: Mathematically calculates true ranks and detects ties
+// ⚡ RANKING ENGINE
 const processRankings = (data: any[]): TeamStats[] => {
   let currentRank = 1;
   return data.map((item, index, arr) => {
-    // Standard competition ranking (1st, 1st, 3rd, 4th)
     if (index > 0 && item.total_points < arr[index - 1].total_points) {
       currentRank = index + 1;
     }
     
-    // Check if points match the previous OR next item in the array
     const isTie = 
       (index > 0 && item.total_points === arr[index - 1].total_points) ||
       (index < arr.length - 1 && item.total_points === arr[index + 1].total_points);
@@ -147,12 +145,12 @@ export default function LiveProjector() {
                     >
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
-                      <div className="flex items-center gap-5 lg:gap-8 w-full min-w-0">
-                        {/* ⚡ THE DYNAMIC RANK BADGE */}
+                      <div className="flex items-center gap-4 lg:gap-8 w-full min-w-0">
+                        {/* ⚡ THE WIDER DYNAMIC TIE BADGE */}
                         <div 
                           className={`border-2 bg-black flex flex-col items-center justify-center shrink-0 shadow-lg transition-all duration-300 ${
                             entry.isTie 
-                              ? 'w-16 h-16 lg:w-20 lg:h-[4.5rem] rounded-[1rem] lg:rounded-[1.25rem] gap-0.5' 
+                              ? 'w-20 h-14 lg:w-28 lg:h-[4.5rem] rounded-xl lg:rounded-2xl gap-0.5 lg:gap-1' 
                               : 'w-12 h-12 lg:w-16 lg:h-16 rounded-full'
                           }`}
                           style={{ borderColor: teamColor }}
@@ -165,7 +163,7 @@ export default function LiveProjector() {
                             </span>
                           )}
                           {entry.isTie && (
-                            <span className="font-black text-[9px] lg:text-[11px] tracking-[0.2em] uppercase leading-none" style={{ color: teamColor }}>
+                            <span className="font-black text-[10px] lg:text-xs tracking-[0.25em] uppercase leading-none mt-0.5" style={{ color: teamColor }}>
                               Tie
                             </span>
                           )}
@@ -238,11 +236,11 @@ export default function LiveProjector() {
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                        {/* ⚡ THE DYNAMIC RANK BADGE */}
+                        {/* ⚡ THE WIDER DYNAMIC TIE BADGE */}
                         <div 
                           className={`border-2 bg-black flex flex-col items-center justify-center mb-4 lg:mb-6 shadow-lg transition-all duration-300 ${
                             entry.isTie 
-                              ? 'w-16 h-16 lg:w-20 lg:h-[4.5rem] rounded-[1rem] lg:rounded-[1.25rem] gap-0.5' 
+                              ? 'w-20 h-14 lg:w-28 lg:h-[4.5rem] rounded-xl lg:rounded-2xl gap-0.5 lg:gap-1' 
                               : 'w-12 h-12 lg:w-16 lg:h-16 rounded-full'
                           }`}
                           style={{ borderColor: teamColor }}
@@ -255,7 +253,7 @@ export default function LiveProjector() {
                             </span>
                           )}
                           {entry.isTie && (
-                            <span className="font-black text-[9px] lg:text-[11px] tracking-[0.2em] uppercase leading-none" style={{ color: teamColor }}>
+                            <span className="font-black text-[10px] lg:text-xs tracking-[0.25em] uppercase leading-none mt-0.5" style={{ color: teamColor }}>
                               Tie
                             </span>
                           )}
