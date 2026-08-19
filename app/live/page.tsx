@@ -67,7 +67,8 @@ export default function LiveProjector() {
     );
 
   return (
-    <div className="min-h-screen lg:h-screen w-full bg-[#000000] text-zinc-300 flex flex-col overflow-y-auto lg:overflow-hidden font-sans selection:bg-indigo-500/30 relative z-50">
+    // FIX 1: Changed to min-h-screen and removed overflow-hidden locks so content can breathe natively
+    <div className="min-h-screen w-full bg-[#000000] text-zinc-300 flex flex-col font-sans selection:bg-indigo-500/30 relative z-50">
       
       {/* --- CINEMATIC DOT MATRIX AMBIENCE --- */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:24px_24px] md:bg-[size:32px_32px] pointer-events-none opacity-80" />
@@ -79,23 +80,25 @@ export default function LiveProjector() {
       />
 
       {/* --- SLEEK BROADCAST HEADER --- */}
-      <header className="relative z-10 w-full pt-8 pb-6 flex flex-col items-center justify-center shrink-0 gap-3 text-center">
+      {/* FIX 2: Slightly reduced vertical padding and header text to give the grid more safe space */}
+      <header className="relative z-10 w-full pt-6 pb-4 lg:pb-6 flex flex-col items-center justify-center shrink-0 gap-3 text-center">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-emerald-500 animate-pulse" />
           <span className="font-mono text-sm uppercase tracking-[0.5em] text-zinc-400 font-bold">
             Live Feed Active
           </span>
         </div>
-        <h1 className="text-5xl sm:text-6xl lg:text-[6.5rem] font-black tracking-tighter text-white uppercase leading-none">
+        <h1 className="text-5xl sm:text-6xl lg:text-[5.5rem] font-black tracking-tighter text-white uppercase leading-none">
           Essenza
         </h1>
       </header>
 
       {/* --- THE MODERN DASHBOARD ENGINE --- */}
-      <main className="flex-1 w-full max-w-[2400px] mx-auto flex flex-col lg:flex-row gap-6 lg:gap-10 p-4 sm:p-6 lg:p-10 lg:pt-2 relative z-10 lg:min-h-0 lg:pb-10">
+      {/* FIX 3: Removed lg:min-h-0 and adjusted padding */}
+      <main className="flex-1 w-full max-w-[2400px] mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 p-4 sm:p-6 lg:p-8 relative z-10">
         
         {/* 🟢 LEFT: GENERAL CHAMPIONSHIP */}
-        <section className="flex flex-col w-full lg:w-[65%] lg:min-h-0">
+        <section className="flex flex-col w-full lg:w-[65%]">
           
           <div className="flex items-center gap-4 mb-4 lg:mb-6 shrink-0 pl-2">
             <Trophy className="w-8 h-8 text-zinc-500 shrink-0" />
@@ -104,10 +107,10 @@ export default function LiveProjector() {
             </h2>
           </div>
           
-          {/* ⚡ STRICT 5-ROW GRID: Eliminates the clipping bug permanently */}
-          <div className="flex-1 grid grid-rows-5 gap-4 lg:gap-5 min-h-0">
+          {/* FIX 4: Removed min-h-0 to stop the browser from aggressively shrinking rows */}
+          <div className="flex-1 grid grid-rows-5 gap-3 lg:gap-4">
             {general.length === 0 ? (
-              <div className="row-span-5 flex flex-col items-center justify-center opacity-50 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-xl">
+              <div className="row-span-5 flex flex-col items-center justify-center py-10 opacity-50 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-xl">
                 <Trophy className="w-16 h-16 mb-4 text-zinc-600" />
                 <p className="font-mono uppercase tracking-[0.3em]">Awaiting Results</p>
               </div>
@@ -127,36 +130,32 @@ export default function LiveProjector() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                        // FIX: Reduced lg:p-10 to lg:p-8 for better vertical fit
-                        className="row-span-2 w-full rounded-[2rem] lg:rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between p-6 lg:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10"
+                        className="row-span-2 w-full rounded-[2rem] lg:rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between p-6 shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10 min-h-[220px]"
                         style={{ backgroundColor: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(40px)' }}
                       >
                         {/* Huge Internal Glow */}
                         <div className="absolute -top-32 -right-32 w-96 h-96 blur-[100px] opacity-40 rounded-full" style={{ backgroundColor: teamColor }} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
 
-                        <div className="relative z-10 flex justify-between items-start w-full">
-                          <div className="px-5 py-2 rounded-full bg-white/10 border border-white/20 flex items-center gap-3 backdrop-blur-md">
+                        <div className="relative z-10 flex justify-between items-start w-full mb-4">
+                          <div className="px-5 py-2 rounded-full bg-white/10 border border-white/20 flex items-center gap-3 backdrop-blur-md shrink-0">
                             <Crown className="w-4 h-4 lg:w-5 lg:h-5 text-yellow-400" />
                             <span className="font-bold text-xs lg:text-sm tracking-[0.2em] uppercase text-white">Current Leader</span>
                           </div>
-                          <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full animate-pulse shadow-[0_0_20px_currentColor]" style={{ backgroundColor: teamColor, color: teamColor }} />
+                          <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full animate-pulse shadow-[0_0_20px_currentColor] shrink-0 mt-2" style={{ backgroundColor: teamColor, color: teamColor }} />
                         </div>
 
-                        <div className="relative z-10 flex items-end justify-between w-full mt-auto pt-4">
-                          {/* FIX: Reduced text size to 6xl and added pb-1 */}
+                        <div className="relative z-10 flex items-end justify-between w-full mt-auto pt-2">
                           <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white leading-[0.9] truncate w-full sm:w-[65%] pr-4 pb-1">
                             {teamName}
                           </h3>
                           <div className="flex items-baseline gap-2 lg:gap-3 text-right shrink-0">
                             <motion.span 
                               key={entry.total_points}
-                              // FIX: Reduced huge 7rem text to 5.5rem and added pb-1
                               className="text-6xl sm:text-7xl lg:text-[5.5rem] font-black tabular-nums tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400 drop-shadow-2xl pb-1"
                             >
                               {entry.total_points}
                             </motion.span>
-                            {/* FIX: Slightly reduced PTS size for proportion */}
                             <span className="text-lg lg:text-xl font-black uppercase text-zinc-500 tracking-[0.3em] pb-1 lg:pb-3">
                               PTS
                             </span>
@@ -174,7 +173,8 @@ export default function LiveProjector() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                      className="row-span-1 w-full flex items-center justify-between px-6 sm:px-8 lg:px-10 rounded-[1.5rem] lg:rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-3xl hover:bg-white/[0.05] transition-colors"
+                      // FIX 5: Added strict vertical padding (py-4) so it defines its own height
+                      className="row-span-1 w-full flex items-center justify-between px-6 sm:px-8 py-4 lg:px-10 rounded-[1.5rem] lg:rounded-[2rem] bg-white/[0.03] border border-white/5 backdrop-blur-3xl hover:bg-white/[0.05] transition-colors"
                     >
                       <div className="flex items-center gap-4 lg:gap-6 w-full min-w-0">
                         <div className="w-10 h-10 lg:w-14 lg:h-14 rounded-full flex items-center justify-center font-black text-lg lg:text-2xl text-zinc-500 bg-black/40 border border-white/5 shrink-0">
@@ -185,7 +185,7 @@ export default function LiveProjector() {
                         </span>
                       </div>
 
-                      <div className="flex items-baseline gap-2 text-right shrink-0">
+                      <div className="flex items-baseline gap-2 text-right shrink-0 pl-4">
                         <motion.span 
                           key={entry.total_points}
                           className="text-4xl sm:text-5xl lg:text-6xl font-black tabular-nums tracking-tighter leading-none text-zinc-100"
@@ -205,7 +205,7 @@ export default function LiveProjector() {
         </section>
 
         {/* 🟣 RIGHT: HIFZ DUEL */}
-        <section className="flex flex-col w-full lg:w-[35%] lg:min-h-0 mt-6 lg:mt-0">
+        <section className="flex flex-col w-full lg:w-[35%] mt-6 lg:mt-0">
           
           <div className="flex items-center gap-4 mb-4 lg:mb-6 shrink-0 pl-2">
             <Zap className="w-8 h-8 text-zinc-500 shrink-0" />
@@ -214,9 +214,10 @@ export default function LiveProjector() {
             </h2>
           </div>
 
-          <div className="flex-1 flex flex-col gap-4 lg:gap-5 min-h-0">
+          {/* Removed min-h-0 here as well */}
+          <div className="flex-1 flex flex-col gap-3 lg:gap-4">
             {hifz.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center opacity-50 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-xl">
+              <div className="flex-1 flex flex-col items-center justify-center py-10 opacity-50 bg-white/5 border border-white/10 rounded-[3rem] backdrop-blur-xl">
                 <Zap className="w-16 h-16 mb-4 text-zinc-600" />
                 <p className="font-mono uppercase tracking-[0.3em]">Awaiting Results</p>
               </div>
@@ -234,7 +235,8 @@ export default function LiveProjector() {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                      className={`flex-1 w-full rounded-[2rem] lg:rounded-[2.5rem] flex flex-col items-center justify-center text-center relative overflow-hidden border ${isFirst ? 'border-white/15 bg-white/[0.04]' : 'border-white/5 bg-black/40'} backdrop-blur-3xl`}
+                      // Added py-8 to ensure internal structure is never crushed
+                      className={`flex-1 w-full rounded-[2rem] lg:rounded-[2.5rem] flex flex-col items-center justify-center text-center relative overflow-hidden border py-8 ${isFirst ? 'border-white/15 bg-white/[0.04]' : 'border-white/5 bg-black/40'} backdrop-blur-3xl`}
                     >
                       {/* Ambient Inner Glow for #1 */}
                       {isFirst && (
