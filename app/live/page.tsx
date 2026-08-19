@@ -112,7 +112,7 @@ export default function LiveProjector() {
       {/* --- PERFECTLY ALIGNED DASHBOARD --- */}
       <main className="flex-1 w-full max-w-[2400px] mx-auto flex flex-col lg:flex-row gap-6 lg:gap-8 p-4 lg:p-8 min-h-0 relative z-10">
         
-        {/* 🟢 LEFT: GENERAL CHAMPIONSHIP */}
+        {/* 🟢 LEFT: GENERAL CHAMPIONSHIP (Reverted to 65% width) */}
         <section className="flex flex-col w-full lg:w-[65%] h-full min-h-0">
           
           <div className="h-10 lg:h-12 flex items-center gap-3 shrink-0 pl-2">
@@ -145,25 +145,21 @@ export default function LiveProjector() {
                     >
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
-                      <div className="flex items-center gap-4 lg:gap-8 w-full min-w-0">
-                        {/* ⚡ THE WIDER DYNAMIC TIE BADGE */}
+                      <div className="flex items-center gap-5 lg:gap-8 w-full min-w-0">
+                        {/* ⚡ BIG UNIFORM POSITION BOX FOR ALL RANKS */}
                         <div 
-                          className={`border-2 bg-black flex flex-col items-center justify-center shrink-0 shadow-lg transition-all duration-300 ${
-                            entry.isTie 
-                              ? 'w-20 h-14 lg:w-28 lg:h-[4.5rem] rounded-xl lg:rounded-2xl gap-0.5 lg:gap-1' 
-                              : 'w-12 h-12 lg:w-16 lg:h-16 rounded-full'
-                          }`}
+                          className="border-2 bg-black flex flex-col items-center justify-center shrink-0 shadow-lg w-20 h-14 lg:w-[120px] lg:h-[72px] rounded-xl lg:rounded-2xl gap-1"
                           style={{ borderColor: teamColor }}
                         >
                           {entry.isFirst ? (
-                            <Crown className="w-5 h-5 lg:w-7 lg:h-7" style={{ color: teamColor }} />
+                            <Crown className="w-6 h-6 lg:w-8 lg:h-8" style={{ color: teamColor }} />
                           ) : (
-                            <span className={`font-black ${entry.isTie ? 'text-lg lg:text-2xl' : 'text-xl lg:text-2xl'}`} style={{ color: teamColor }}>
+                            <span className="font-black text-xl lg:text-3xl" style={{ color: teamColor }}>
                               #{entry.rank}
                             </span>
                           )}
                           {entry.isTie && (
-                            <span className="font-black text-[10px] lg:text-xs tracking-[0.25em] uppercase leading-none mt-0.5" style={{ color: teamColor }}>
+                            <span className="font-black text-[10px] lg:text-xs tracking-[0.25em] uppercase leading-none" style={{ color: teamColor }}>
                               Tie
                             </span>
                           )}
@@ -236,24 +232,20 @@ export default function LiveProjector() {
                       <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                        {/* ⚡ THE WIDER DYNAMIC TIE BADGE */}
+                        {/* ⚡ BIG UNIFORM POSITION BOX */}
                         <div 
-                          className={`border-2 bg-black flex flex-col items-center justify-center mb-4 lg:mb-6 shadow-lg transition-all duration-300 ${
-                            entry.isTie 
-                              ? 'w-20 h-14 lg:w-28 lg:h-[4.5rem] rounded-xl lg:rounded-2xl gap-0.5 lg:gap-1' 
-                              : 'w-12 h-12 lg:w-16 lg:h-16 rounded-full'
-                          }`}
+                          className="border-2 bg-black flex flex-col items-center justify-center mb-4 lg:mb-6 shadow-lg w-20 h-14 lg:w-[120px] lg:h-[72px] rounded-xl lg:rounded-2xl gap-1"
                           style={{ borderColor: teamColor }}
                         >
                           {entry.isFirst ? (
-                            <Crown className="w-5 h-5 lg:w-7 lg:h-7" style={{ color: teamColor }} />
+                            <Crown className="w-6 h-6 lg:w-8 lg:h-8" style={{ color: teamColor }} />
                           ) : (
-                            <span className={`font-black ${entry.isTie ? 'text-lg lg:text-2xl' : 'text-xl lg:text-2xl'}`} style={{ color: teamColor }}>
+                            <span className="font-black text-xl lg:text-3xl" style={{ color: teamColor }}>
                               #{entry.rank}
                             </span>
                           )}
                           {entry.isTie && (
-                            <span className="font-black text-[10px] lg:text-xs tracking-[0.25em] uppercase leading-none mt-0.5" style={{ color: teamColor }}>
+                            <span className="font-black text-[10px] lg:text-xs tracking-[0.25em] uppercase leading-none" style={{ color: teamColor }}>
                               Tie
                             </span>
                           )}
