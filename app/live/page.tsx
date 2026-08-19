@@ -127,7 +127,8 @@ export default function LiveProjector() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                        className="row-span-2 w-full rounded-[2rem] lg:rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between p-6 lg:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10"
+                        // FIX: Reduced lg:p-10 to lg:p-8 for better vertical fit
+                        className="row-span-2 w-full rounded-[2rem] lg:rounded-[2.5rem] relative overflow-hidden flex flex-col justify-between p-6 lg:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/10"
                         style={{ backgroundColor: 'rgba(20,20,20,0.6)', backdropFilter: 'blur(40px)' }}
                       >
                         {/* Huge Internal Glow */}
@@ -143,17 +144,20 @@ export default function LiveProjector() {
                         </div>
 
                         <div className="relative z-10 flex items-end justify-between w-full mt-auto pt-4">
-                          <h3 className="text-4xl sm:text-5xl lg:text-7xl font-black uppercase tracking-tight text-white leading-[0.9] truncate w-full sm:w-[65%] pr-4">
+                          {/* FIX: Reduced text size to 6xl and added pb-1 */}
+                          <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-white leading-[0.9] truncate w-full sm:w-[65%] pr-4 pb-1">
                             {teamName}
                           </h3>
                           <div className="flex items-baseline gap-2 lg:gap-3 text-right shrink-0">
                             <motion.span 
                               key={entry.total_points}
-                              className="text-6xl sm:text-7xl lg:text-[7rem] font-black tabular-nums tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400 drop-shadow-2xl"
+                              // FIX: Reduced huge 7rem text to 5.5rem and added pb-1
+                              className="text-6xl sm:text-7xl lg:text-[5.5rem] font-black tabular-nums tracking-tighter leading-none text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400 drop-shadow-2xl pb-1"
                             >
                               {entry.total_points}
                             </motion.span>
-                            <span className="text-lg lg:text-2xl font-black uppercase text-zinc-500 tracking-[0.3em] pb-1 lg:pb-3">
+                            {/* FIX: Slightly reduced PTS size for proportion */}
+                            <span className="text-lg lg:text-xl font-black uppercase text-zinc-500 tracking-[0.3em] pb-1 lg:pb-3">
                               PTS
                             </span>
                           </div>
