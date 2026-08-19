@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Zap, Trophy, Loader2, Crown, Activity } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 
 // --- TYPES ---
 type TeamStats = {
@@ -14,6 +14,23 @@ type TeamStats = {
   total_points: number;
   color?: string;
 };
+
+// ⚡ COUNTING ANIMATION COMPONENT
+function AnimatedCounter({ value }: { value: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, Math.round);
+
+  useEffect(() => {
+    // Animates the number from its current state to the new value
+    const animation = animate(count, value, { 
+      duration: 1.5, 
+      ease: "easeOut" 
+    });
+    return animation.stop;
+  }, [value, count]);
+
+  return <motion.span>{rounded}</motion.span>;
+}
 
 export default function LiveProjector() {
   const [general, setGeneral] = useState<TeamStats[]>([]);
@@ -67,7 +84,7 @@ export default function LiveProjector() {
     );
 
   return (
-    // ⚡ STRICT SCREEN LOCK: Prevents scrolling, forces mathematical alignment
+    // ⚡ STRICT SCREEN LOCK
     <div className="h-screen w-full bg-[#030303] text-zinc-300 flex flex-col overflow-hidden font-sans selection:bg-indigo-500/30 relative z-50">
       
       {/* --- MINIMALIST AMBIENCE --- */}
@@ -92,7 +109,6 @@ export default function LiveProjector() {
         {/* 🟢 LEFT: GENERAL CHAMPIONSHIP */}
         <section className="flex flex-col w-full lg:w-[65%] h-full min-h-0">
           
-          {/* STRICT HEADER HEIGHT */}
           <div className="h-10 lg:h-12 flex items-center gap-3 shrink-0">
             <Trophy className="w-6 h-6 text-zinc-500" />
             <h2 className="text-xl lg:text-2xl font-black uppercase tracking-widest text-zinc-300">
@@ -100,10 +116,10 @@ export default function LiveProjector() {
             </h2>
           </div>
           
-          {/* STRICT 5-ROW GRID: Forces exact mathematical card heights */}
-          <div className="flex-1 grid grid-rows-5 gap-4 min-h-0 pb-2">
+          {/* ⚡ STRICT 4-ROW GRID: Makes all boxes perfectly identical */}
+          <div className="flex-1 grid grid-rows-4 gap-4 min-h-0 pb-2">
             {general.length === 0 ? (
-              <div className="row-span-5 flex flex-col items-center justify-center opacity-50 bg-[#0a0a0a] border border-zinc-800 rounded-3xl">
+              <div className="row-span-4 flex flex-col items-center justify-center opacity-50 bg-[#0a0a0a] border border-zinc-800 rounded-3xl">
                 <Trophy className="w-12 h-12 mb-4 text-zinc-700" />
                 <p className="font-mono uppercase tracking-[0.3em] text-zinc-600">Awaiting Results</p>
               </div>
@@ -112,53 +128,7 @@ export default function LiveProjector() {
                 {general.map((entry, index) => {
                   const teamColor = entry.color || "#6366f1";
                   const teamName = entry.name || entry.team_name || entry.team || "Unknown Team";
-                  const isFirst = index === 0;
 
-                  // ⚡ PURE MODERN HERO CARD (Takes exactly 2 grid rows)
-                  if (isFirst) {
-                    return (
-                      <motion.div
-                        key={entry.id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                        className="row-span-2 w-full rounded-3xl relative overflow-hidden flex flex-col justify-between p-6 lg:p-8 bg-[#0a0a0a] border border-zinc-800 shadow-2xl"
-                      >
-                        {/* High-End Accent Line */}
-                        <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
-
-                        {/* Top Info */}
-                        <div className="flex justify-between items-center w-full">
-                          <div className="px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 flex items-center gap-2">
-                            <Crown className="w-4 h-4" style={{ color: teamColor }} />
-                            <span className="font-bold text-[10px] lg:text-xs tracking-[0.2em] uppercase text-zinc-300">Current Leader</span>
-                          </div>
-                          <div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: teamColor, boxShadow: `0 0 15px ${teamColor}` }} />
-                        </div>
-
-                        {/* Flex Alignment prevents clipping */}
-                        <div className="flex items-end justify-between w-full mt-auto">
-                          <h3 className="text-5xl lg:text-[5rem] font-black uppercase tracking-tight text-white leading-none truncate w-[70%] pr-4">
-                            {teamName}
-                          </h3>
-                          <div className="flex flex-col items-end shrink-0">
-                            <motion.span 
-                              key={entry.total_points}
-                              className="text-6xl lg:text-[6.5rem] font-black tabular-nums tracking-tighter leading-none text-white"
-                            >
-                              {entry.total_points}
-                            </motion.span>
-                            <span className="text-xs lg:text-sm font-bold uppercase text-zinc-500 tracking-[0.3em] mt-2">
-                              Points
-                            </span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  }
-
-                  // ⚡ RANKS 2, 3, 4: SLEEK LIST ROWS (Takes exactly 1 grid row each)
                   return (
                     <motion.div
                       key={entry.id}
@@ -166,25 +136,34 @@ export default function LiveProjector() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                      className="row-span-1 w-full flex items-center justify-between px-6 lg:px-8 rounded-2xl bg-[#080808] border border-zinc-800/60"
+                      className="row-span-1 w-full rounded-[2rem] relative overflow-hidden flex items-center justify-between p-6 lg:p-8 bg-[#0a0a0a] border border-zinc-800 shadow-xl"
                     >
-                      <div className="flex items-center gap-4 lg:gap-6 w-full min-w-0">
-                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-black text-sm lg:text-lg text-zinc-500 bg-zinc-900 border border-zinc-800 shrink-0">
-                          #{index + 1}
+                      {/* Top Team Color Line for EVERY box */}
+                      <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
+
+                      <div className="flex items-center gap-5 lg:gap-8 w-full min-w-0">
+                        {/* Circular Rank Badge with Team Color */}
+                        <div 
+                          className="w-12 h-12 lg:w-16 lg:h-16 rounded-full border-2 bg-black flex items-center justify-center shrink-0 shadow-lg"
+                          style={{ borderColor: teamColor }}
+                        >
+                          {index === 0 ? (
+                            <Crown className="w-5 h-5 lg:w-7 lg:h-7" style={{ color: teamColor }} />
+                          ) : (
+                            <span className="font-black text-xl lg:text-2xl" style={{ color: teamColor }}>#{index + 1}</span>
+                          )}
                         </div>
-                        <span className="text-3xl lg:text-4xl font-black uppercase tracking-tight truncate w-full text-zinc-300">
+                        <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tight text-white truncate w-full pr-4">
                           {teamName}
-                        </span>
+                        </h3>
                       </div>
 
-                      <div className="flex items-center gap-3 text-right shrink-0">
-                        <motion.span 
-                          key={entry.total_points}
-                          className="text-4xl lg:text-5xl font-black tabular-nums tracking-tighter leading-none text-white"
-                        >
-                          {entry.total_points}
-                        </motion.span>
-                        <span className="text-[10px] lg:text-xs font-bold uppercase text-zinc-600 tracking-[0.2em] pt-2">
+                      <div className="flex items-end gap-2 lg:gap-3 text-right shrink-0">
+                        <div className="text-5xl lg:text-[5.5rem] font-black tabular-nums tracking-tighter leading-none text-white">
+                          {/* ⚡ THE ANIMATED COUNTER */}
+                          <AnimatedCounter value={entry.total_points} />
+                        </div>
+                        <span className="text-sm lg:text-lg font-bold uppercase text-zinc-600 tracking-[0.3em] pb-1 lg:pb-2">
                           PTS
                         </span>
                       </div>
@@ -199,7 +178,6 @@ export default function LiveProjector() {
         {/* 🟣 RIGHT: HIFZ DUEL */}
         <section className="flex flex-col w-full lg:w-[35%] h-full min-h-0">
           
-          {/* STRICT HEADER HEIGHT (Identical to Left Side) */}
           <div className="h-10 lg:h-12 flex items-center gap-3 shrink-0 pl-2">
             <Zap className="w-6 h-6 text-zinc-500 shrink-0" />
             <h2 className="text-xl lg:text-2xl font-black uppercase tracking-widest text-zinc-400">
@@ -207,7 +185,6 @@ export default function LiveProjector() {
             </h2>
           </div>
 
-          {/* STRICT 2-ROW GRID: Automatically aligns bottom with the left side */}
           <div className="flex-1 grid grid-rows-2 gap-4 min-h-0 pb-2">
             {hifz.length === 0 ? (
               <div className="row-span-2 flex flex-col items-center justify-center opacity-50 bg-[#0a0a0a] border border-zinc-800 rounded-3xl">
@@ -219,7 +196,6 @@ export default function LiveProjector() {
                 {hifz.map((entry, index) => {
                   const teamColor = entry.color || "#6366f1";
                   const teamName = entry.name || entry.team_name || entry.team || "Unknown Team";
-                  const isFirst = index === 0;
 
                   return (
                     <motion.div
@@ -228,29 +204,30 @@ export default function LiveProjector() {
                       initial={{ opacity: 0, scale: 0.98 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                      className="row-span-1 w-full rounded-3xl flex flex-col items-center justify-center text-center relative overflow-hidden bg-[#0a0a0a] border border-zinc-800 p-6 shadow-xl"
+                      className="row-span-1 w-full rounded-[2.5rem] flex flex-col items-center justify-center text-center relative overflow-hidden bg-[#0a0a0a] border border-zinc-800 p-6 shadow-xl"
                     >
-                      {isFirst && (
-                        <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
-                      )}
+                      {/* Top Team Color Line for EVERY box */}
+                      <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: teamColor }} />
 
                       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
-                        <div className="px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900 mb-4 lg:mb-6 text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-400">
-                          Rank #{index + 1}
+                        {/* Circular Rank Badge */}
+                        <div 
+                          className="w-12 h-12 lg:w-16 lg:h-16 rounded-full border-2 bg-black flex items-center justify-center mb-4 lg:mb-6 shadow-lg"
+                          style={{ borderColor: teamColor }}
+                        >
+                          <span className="font-black text-xl lg:text-2xl" style={{ color: teamColor }}>#{index + 1}</span>
                         </div>
                         
                         <h3 className="text-4xl lg:text-5xl font-black uppercase tracking-tight mb-2 w-full truncate text-white">
                           {teamName}
                         </h3>
                         
-                        <motion.div 
-                          key={entry.total_points} 
-                          className="text-6xl lg:text-[6rem] font-black tabular-nums tracking-tighter leading-none mt-2 text-white"
-                        >
-                          {entry.total_points}
-                        </motion.div>
+                        <div className="text-6xl lg:text-[6.5rem] font-black tabular-nums tracking-tighter leading-none mt-2 text-white">
+                          {/* ⚡ THE ANIMATED COUNTER */}
+                          <AnimatedCounter value={entry.total_points} />
+                        </div>
                         
-                        <p className="text-xs font-bold text-zinc-600 uppercase tracking-[0.4em] mt-3 lg:mt-4">
+                        <p className="text-sm font-bold text-zinc-600 uppercase tracking-[0.4em] mt-3 lg:mt-5">
                           Points
                         </p>
                       </div>
