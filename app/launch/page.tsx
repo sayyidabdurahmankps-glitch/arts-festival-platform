@@ -101,8 +101,9 @@ export default function ResponsiveLaunchPage() {
                 <Sparkles className="absolute w-8 h-8 md:w-12 md:h-12 text-white animate-pulse" />
               </div>
               <motion.p
-                initial={{ opacity: 0, mt: 10 }}
-                animate={{ opacity: 1, mt: 32 }}
+                /* ⚡ FIXED: Using marginTop instead of mt */
+                initial={{ opacity: 0, marginTop: 10 }}
+                animate={{ opacity: 1, marginTop: 32 }}
                 className="text-lg md:text-2xl lg:text-4xl font-black uppercase tracking-[0.5em] text-white"
               >
                 Entering Essenza
