@@ -11,6 +11,7 @@ type GalleryAsset = {
   category: string;
   photographer: string;
   created_at: string;
+  position?: number; // ⚡ Added position type
 };
 
 export default function LiveBentoGallery() {
@@ -24,6 +25,8 @@ export default function LiveBentoGallery() {
       const { data, error } = await supabase
         .from("gallery")
         .select("*")
+        // ⚡ FIX: Respect the custom drag-and-drop grid ordering first!
+        .order("position", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (!error && data) setAssets(data);
@@ -68,9 +71,7 @@ export default function LiveBentoGallery() {
   return (
     <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-cyan-500 selection:text-black relative pb-32">
       
-      {/* 1. APP-STYLE HEADER 
-          ⚡ FIXED: Increased pt-12 to pt-28 md:pt-36 to push text below the fixed navbar 
-      */}
+      {/* 1. APP-STYLE HEADER */}
       <header className="px-4 md:px-10 pt-28 md:pt-36 pb-6 flex items-end justify-between border-b border-white/5 relative z-10">
         <div>
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase leading-none drop-shadow-lg">
