@@ -99,7 +99,7 @@ export default function GlobalSearchPage() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  // ⚡ FETCH ENGINE (Includes grade)
+  // ⚡ FETCH ENGINE (Now includes grade)
   useEffect(() => {
     const fetchRegistry = async () => {
       try {
@@ -269,16 +269,15 @@ export default function GlobalSearchPage() {
                   const teamColor = participant.teams?.color || "#6366f1";
                   const teamName = participant.teams?.name || "Independent";
 
-                  // Convert to standard array
+                  // ⚡ Filter out pending results to keep the public search clean
                   const safeResultsArray = Array.isArray(participant.results)
                     ? participant.results
                     : participant.results
                       ? [participant.results]
                       : [];
 
-                  // ⚡ STRICT FILTER: ONLY KEEP 'APPROVED' RESULTS
                   const approvedResults = safeResultsArray.filter(
-                    (r: any) => r.status && String(r.status).toLowerCase() === "approved"
+                    (r: any) => String(r.status).toLowerCase() === "approved"
                   );
 
                   return (
@@ -323,7 +322,7 @@ export default function GlobalSearchPage() {
                         </div>
                       </div>
 
-                      {/* ⚡ ONLY RENDER ACHIEVEMENT BLOCK IF THERE ARE APPROVED RESULTS */}
+                      {/* ⚡ BIGGER WINNINGS UI WITH GRADE AND POSITION */}
                       {approvedResults.length > 0 && (
                         <div className="mt-6 pt-6 border-t border-white/5 w-full">
                           <p className="text-[10px] md:text-[11px] font-black text-zinc-500 uppercase tracking-widest mb-4 ml-1 flex items-center gap-2">
@@ -331,7 +330,7 @@ export default function GlobalSearchPage() {
                             Verified Achievements
                           </p>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+                          <div className="grid grid-cols-1 gap-3 md:gap-4">
                             {approvedResults.map((win, rIdx) => {
                               const evName = Array.isArray(win.events)
                                 ? win.events[0]?.name
@@ -373,6 +372,9 @@ export default function GlobalSearchPage() {
                                       <div className="flex items-center gap-2 mt-1.5">
                                         <span className="text-[9px] md:text-[10px] font-mono text-zinc-400 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/10">
                                           Grade {win.grade && win.grade !== 'None' ? win.grade : 'N/A'}
+                                        </span>
+                                        <span className="text-[9px] md:text-[10px] font-mono text-emerald-500/70 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                          Verified
                                         </span>
                                       </div>
                                     </div>
