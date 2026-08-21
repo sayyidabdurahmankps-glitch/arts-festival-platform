@@ -100,7 +100,7 @@ export default function BatchDeclarationTerminal() {
     return liveEvents.filter((e) => e.event_code.toLowerCase().includes(q) || e.name.toLowerCase().includes(q)).slice(0, 5);
   }, [eventInput, liveEvents, activeEvent]);
 
-  // ⚡ EVENT LOCK & RECALL LOGIC (For Edit Mode)
+  // ⚡ EVENT LOCK & RECALL LOGIC
   const lockEventAndRecall = async (evt: EventData) => {
     setActiveEvent(evt);
     setEventInput("");
@@ -155,7 +155,7 @@ export default function BatchDeclarationTerminal() {
     };
   }, [activeEvent, pointRules]);
 
-  // ⚡ SUPABASE STUDENT SEARCH ENGINE (Debounced)
+  // ⚡ SUPABASE STUDENT SEARCH ENGINE
   useEffect(() => {
     let isMounted = true;
     const activeEntry = activeInputIndex !== null ? entries[activeInputIndex] : null;
@@ -222,11 +222,12 @@ export default function BatchDeclarationTerminal() {
       return alert("1st Place is strictly required. Please select a student and a grade.");
     }
 
+    // ⚡ FIX: Now correctly accepts "None" (No Grade) as a valid selection!
     const invalidEntry = filledEntries.find(
-      (e) => (e.selectedStudent && (!e.grade || e.grade === "None")) || (!e.selectedStudent && e.grade && e.grade !== "None")
+      (e) => (e.selectedStudent && !e.grade) || (!e.selectedStudent && e.grade !== "")
     );
     if (invalidEntry) {
-      return alert(`Incomplete data for ${invalidEntry.label}. Both Student ID and Grade are required if you are declaring a winner for this position.`);
+      return alert(`Incomplete data for ${invalidEntry.label}. Please make sure to assign a grade (or select "No Grade") if a student is entered.`);
     }
 
     const categoryMismatch = filledEntries.some(
@@ -455,7 +456,6 @@ export default function BatchDeclarationTerminal() {
 
           <div className="space-y-6 mb-10 flex flex-col">
             {entries.map((entry, index) => {
-              // ⚡ THE BUG FIX: Only grab suggestions if the state length is > 0 and index matches
               const activeSuggestions = activeInputIndex === index ? suggestions : [];
               const showNoMatchWarning = activeInputIndex === index && entry.studentInput.length >= 2 && activeSuggestions.length === 0 && !entry.selectedStudent && !isSearchingStudent;
 
