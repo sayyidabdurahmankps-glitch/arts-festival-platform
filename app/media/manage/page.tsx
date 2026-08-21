@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { Loader2, Trash2, ShieldAlert, Edit2, X, Save, Hash, GripVertical, Camera, Compass } from 'lucide-react';
+import { Loader2, Trash2, ShieldAlert, Edit2, X, Save, Hash, GripVertical, Compass } from 'lucide-react';
 
 // --- TYPES ---
 type Asset = { 
@@ -59,7 +59,6 @@ export default function MediaAssetManager() {
     return ["All", ...Array.from(cats)].sort();
   }, [assets]);
 
-  // ⚡ FILTER ENGINE
   const filteredItems = useMemo(() => {
     return assets.filter((item) => {
       if (activeCat === "All") return true;
@@ -68,7 +67,7 @@ export default function MediaAssetManager() {
     });
   }, [assets, activeCat]);
 
-  // ⚡ BULLETPROOF DELETE (Fixed Event Propagation)
+  // ⚡ BULLETPROOF DELETE
   const deleteAsset = async (e: React.MouseEvent, asset: Asset) => {
     e.preventDefault();
     e.stopPropagation();
@@ -130,41 +129,11 @@ export default function MediaAssetManager() {
     }
   };
 
-  // ⚡ DRAG AND DROP ENGINE (Disabled when filtered)
+  // ⚡ DRAG AND DROP ENGINE (Shared between Desktop & Mobile)
   const isDragEnabled = activeCat === "All" && editingId === null;
 
-  const handleDragStart = (e: React.DragEvent, id: string) => {
-    if (!isDragEnabled) return;
-    setDraggedId(id);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", id);
-  };
-
-  const handleDragOver = (e: React.DragEvent, id: string) => {
-    if (!isDragEnabled) return;
-    e.preventDefault(); 
-    if (dragOverId !== id && draggedId !== id) {
-      setDragOverId(id);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (!isDragEnabled) return;
-    e.preventDefault();
-    setDragOverId(null);
-  };
-
-  const handleDrop = async (e: React.DragEvent, targetId: string) => {
-    if (!isDragEnabled) return;
-    e.preventDefault();
-    setDragOverId(null);
-    const sourceId = draggedId || e.dataTransfer.getData("text/plain");
-    setDraggedId(null);
-
-    if (!sourceId || sourceId === targetId) return;
-
+  const performReorder = async (sourceId: string, targetId: string) => {
     setIsSyncingOrder(true);
-
     const oldAssets = [...assets];
     const sourceIndex = oldAssets.findIndex(a => a.id === sourceId);
     const targetIndex = oldAssets.findIndex(a => a.id === targetId);
@@ -193,6 +162,70 @@ export default function MediaAssetManager() {
     } finally {
       setIsSyncingOrder(false);
     }
+  };
+
+  // --- DESKTOP HTML5 HANDLERS ---
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    if (!isDragEnabled) return;
+    setDraggedId(id);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    if (!isDragEnabled) return;
+    e.preventDefault(); 
+    if (dragOverId !== id && draggedId !== id) setDragOverId(id);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!isDragEnabled) return;
+    e.preventDefault();
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    if (!isDragEnabled) return;
+    e.preventDefault();
+    setDragOverId(null);
+    const sourceId = draggedId || e.dataTransfer.getData("text/plain");
+    setDraggedId(null);
+
+    if (!sourceId || sourceId === targetId) return;
+    performReorder(sourceId, targetId);
+  };
+
+  // --- 📱 MOBILE TOUCH HANDLERS ---
+  const handleTouchStart = (e: React.TouchEvent, id: string) => {
+    if (!isDragEnabled) return;
+    setDraggedId(id);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragEnabled || !draggedId) return;
+    
+    // Calculate which card the user's finger is currently dragging over
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetCard = element?.closest('[data-drag-id]');
+
+    if (targetCard) {
+      const targetId = targetCard.getAttribute('data-drag-id');
+      if (targetId && targetId !== dragOverId && targetId !== draggedId) {
+        setDragOverId(targetId);
+      }
+    } else {
+      if (dragOverId) setDragOverId(null);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isDragEnabled || !draggedId) return;
+    if (dragOverId && draggedId !== dragOverId) {
+      performReorder(draggedId, dragOverId);
+    }
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   if (loading) {
@@ -238,7 +271,7 @@ export default function MediaAssetManager() {
         </div>
       )}
 
-      {/* 2. MANAGER GRID (Uniform to allow editing forms to fit) */}
+      {/* 2. MANAGER GRID */}
       <main className="p-4 md:p-10 pt-8 relative z-10">
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -249,6 +282,7 @@ export default function MediaAssetManager() {
               return (
                 <div 
                   key={asset.id} 
+                  data-drag-id={asset.id}
                   draggable={isDragEnabled}
                   onDragStart={(e) => handleDragStart(e, asset.id)}
                   onDragOver={(e) => handleDragOver(e, asset.id)}
@@ -263,11 +297,24 @@ export default function MediaAssetManager() {
                   
                   {/* IMAGE THUMBNAIL */}
                   <div className={`relative aspect-video rounded-2xl overflow-hidden bg-black mb-4 border border-white/5 shrink-0 ${isDragEnabled ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}>
-                    <img src={asset.image_url} alt="thumbnail" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" />
+                    <img src={asset.image_url} alt="thumbnail" className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity pointer-events-none" />
                     
+                    {/* Desktop Overlay Drag Hint */}
                     {isDragEnabled && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center pointer-events-none hidden md:flex">
                          <GripVertical className="w-8 h-8 text-white/50" />
+                      </div>
+                    )}
+
+                    {/* 📱 MOBILE TOUCH DRAG HANDLE */}
+                    {isDragEnabled && (
+                      <div 
+                        className="absolute top-2 right-2 w-9 h-9 bg-black/80 backdrop-blur-md rounded-lg border border-cyan-500/30 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-[0_0_15px_rgba(6,182,212,0.2)]"
+                        onTouchStart={(e) => handleTouchStart(e, asset.id)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                      >
+                         <GripVertical className="w-5 h-5 text-cyan-400" />
                       </div>
                     )}
 
