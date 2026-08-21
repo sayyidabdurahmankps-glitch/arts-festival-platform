@@ -180,11 +180,19 @@ export default function MediaAssetManager() {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", id);
   };
+  
   const handleDragOver = (e: React.DragEvent, id: string) => {
     if (!isDragEnabled) return;
     e.preventDefault(); 
     if (dragOverId !== id && draggedId !== id) setDragOverId(id);
   };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!isDragEnabled) return;
+    e.preventDefault();
+    setDragOverId(null);
+  };
+
   const handleDrop = async (e: React.DragEvent, targetId: string) => {
     if (!isDragEnabled) return;
     e.preventDefault();
