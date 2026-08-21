@@ -67,26 +67,49 @@ export default function MediaAssetManager() {
     });
   }, [assets, activeCat]);
 
-  // ⚡ BULLETPROOF DELETE
-  const deleteAsset = async (e: React.MouseEvent, asset: Asset) => {
+  // ⚡ AUTO-COLLAPSE DELETE ENGINE
+  const deleteAsset = async (e: React.MouseEvent, assetToDelete: Asset) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!confirm(`Permanently delete "${asset.title || 'this image'}"?`)) return;
-    setDeletingId(asset.id);
+    if (!confirm(`Permanently delete "${assetToDelete.title || 'this image'}"?`)) return;
+    setDeletingId(assetToDelete.id);
+    
     try {
-      if (asset.file_path) {
-        const { error: storageError } = await supabase.storage.from('media-gallery').remove([asset.file_path]);
+      // 1. Delete from Storage
+      if (assetToDelete.file_path) {
+        const { error: storageError } = await supabase.storage.from('media-gallery').remove([assetToDelete.file_path]);
         if (storageError) console.warn("Storage Warning:", storageError.message);
       }
-      const { error: dbError } = await supabase.from('gallery').delete().eq('id', asset.id);
+      
+      // 2. Delete from Database
+      const { error: dbError } = await supabase.from('gallery').delete().eq('id', assetToDelete.id);
       if (dbError) throw dbError;
       
-      setAssets(prev => prev.filter(a => a.id !== asset.id));
+      // 3. Auto-collapse the grid layout to fill the empty position
+      const remainingAssets = assets.filter(a => a.id !== assetToDelete.id);
+      const reorderedAssets = remainingAssets.map((asset, index) => ({
+        ...asset,
+        position: index + 1 // Re-index continuously from 1
+      }));
+
+      // 4. Update UI Instantly
+      setAssets(reorderedAssets);
+
+      // 5. Sync the new collapsed positions to Supabase
+      setIsSyncingOrder(true);
+      await Promise.all(
+        reorderedAssets.map(asset => 
+          supabase.from('gallery').update({ position: asset.position }).eq('id', asset.id)
+        )
+      );
+
     } catch (error: any) {
       alert("Deletion Failed: " + error.message);
+      fetchAssets(); // Force a hard refresh if things get out of sync
     } finally {
       setDeletingId(null);
+      setIsSyncingOrder(false);
     }
   };
 
@@ -129,7 +152,7 @@ export default function MediaAssetManager() {
     }
   };
 
-  // ⚡ DRAG AND DROP ENGINE (Shared between Desktop & Mobile)
+  // ⚡ DRAG AND DROP ENGINE
   const isDragEnabled = activeCat === "All" && editingId === null;
 
   const performReorder = async (sourceId: string, targetId: string) => {
@@ -204,7 +227,6 @@ export default function MediaAssetManager() {
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragEnabled || !draggedId) return;
     
-    // Calculate which card the user's finger is currently dragging over
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     const targetCard = element?.closest('[data-drag-id]');
