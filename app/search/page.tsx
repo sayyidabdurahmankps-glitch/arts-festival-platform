@@ -9,10 +9,8 @@ import {
   ShieldAlert,
   Zap,
   X,
-  ChevronRight,
   Hash,
   Medal,
-  Clock,
   Trophy,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -101,7 +99,7 @@ export default function GlobalSearchPage() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  // ⚡ FETCH ENGINE
+  // ⚡ FETCH ENGINE (Now includes grade)
   useEffect(() => {
     const fetchRegistry = async () => {
       try {
@@ -118,6 +116,7 @@ export default function GlobalSearchPage() {
               position,
               points,
               status,
+              grade,
               events ( name )
             )
           `,
@@ -264,17 +263,22 @@ export default function GlobalSearchPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4 pb-20">
+            <div className="space-y-6 pb-20">
               <AnimatePresence>
                 {displayedResults.map((participant, idx) => {
                   const teamColor = participant.teams?.color || "#6366f1";
                   const teamName = participant.teams?.name || "Independent";
 
+                  // ⚡ Filter out pending results to keep the public search clean
                   const safeResultsArray = Array.isArray(participant.results)
                     ? participant.results
                     : participant.results
                       ? [participant.results]
                       : [];
+
+                  const approvedResults = safeResultsArray.filter(
+                    (r: any) => String(r.status).toLowerCase() === "approved"
+                  );
 
                   return (
                     <motion.div
@@ -283,24 +287,24 @@ export default function GlobalSearchPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ duration: 0.2, delay: idx * 0.02 }}
-                      className="group flex flex-col p-4 md:p-6 rounded-[1.5rem] bg-[#0a0a0a]/80 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] backdrop-blur-xl transition-all shadow-lg overflow-hidden relative"
+                      className="group flex flex-col p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] bg-[#0a0a0a]/80 border border-white/5 hover:border-white/10 hover:bg-white/[0.02] backdrop-blur-xl transition-all shadow-lg overflow-hidden relative"
                     >
                       <div
-                        className="absolute left-0 top-0 bottom-0 w-1.5 opacity-80"
+                        className="absolute left-0 top-0 bottom-0 w-1.5 md:w-2 opacity-80"
                         style={{ backgroundColor: teamColor }}
                       />
 
                       <div className="flex items-center justify-between w-full">
-                        <div className="flex items-start sm:items-center gap-4 pl-2 w-full sm:w-auto">
-                          <div className="w-12 h-12 rounded-xl bg-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
-                            <User className="w-5 h-5 text-zinc-500" />
+                        <div className="flex items-start sm:items-center gap-4 md:gap-6 pl-2 w-full sm:w-auto">
+                          <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+                            <User className="w-6 h-6 md:w-7 md:h-7 text-zinc-500" />
                           </div>
                           <div className="flex flex-col truncate">
-                            <h3 className="text-lg md:text-xl font-black text-white tracking-tight truncate">
+                            <h3 className="text-xl md:text-2xl font-black text-white tracking-tight truncate">
                               {participant.name}
                             </h3>
-                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-1.5">
-                              <span className="inline-flex items-center gap-1.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-zinc-400 truncate bg-white/5 px-2.5 py-1 rounded-md border border-white/5">
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2">
+                              <span className="inline-flex items-center gap-1.5 text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400 truncate bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
                                 <span
                                   className="w-2 h-2 rounded-full shrink-0 shadow-sm"
                                   style={{ backgroundColor: teamColor }}
@@ -308,7 +312,7 @@ export default function GlobalSearchPage() {
                                 {teamName}
                               </span>
                               {participant.participant_id && (
-                                <span className="inline-flex items-center gap-1 text-[9px] md:text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 px-2.5 py-1 bg-black/50 rounded-md border border-white/5">
+                                <span className="inline-flex items-center gap-1.5 text-[10px] md:text-xs font-mono font-bold uppercase tracking-widest text-zinc-500 px-3 py-1.5 bg-black/50 rounded-lg border border-white/5">
                                   <Hash className="w-3 h-3" />
                                   {participant.participant_id}
                                 </span>
@@ -318,75 +322,71 @@ export default function GlobalSearchPage() {
                         </div>
                       </div>
 
-                      {/* ⚡ MODERN WINNINGS UI */}
-                      {safeResultsArray.length > 0 && (
-                        <div className="mt-5 pt-5 border-t border-white/5 w-full">
-                          <p className="text-[9px] md:text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 ml-1 flex items-center gap-2">
-                            <Trophy className="w-3 h-3 text-indigo-400" />{" "}
-                            Achievement Record
+                      {/* ⚡ BIGGER WINNINGS UI WITH GRADE AND POSITION */}
+                      {approvedResults.length > 0 && (
+                        <div className="mt-6 pt-6 border-t border-white/5 w-full">
+                          <p className="text-[10px] md:text-[11px] font-black text-zinc-500 uppercase tracking-widest mb-4 ml-1 flex items-center gap-2">
+                            <Trophy className="w-4 h-4 text-indigo-400" />{" "}
+                            Verified Achievements
                           </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                            {safeResultsArray.map((win, rIdx) => {
+                          
+                          <div className="grid grid-cols-1 gap-3 md:gap-4">
+                            {approvedResults.map((win, rIdx) => {
                               const evName = Array.isArray(win.events)
                                 ? win.events[0]?.name
                                 : win.events?.name;
-                              const isApproved =
-                                String(win.status).toLowerCase() === "approved";
                               const position = String(win.position);
 
                               // Dynamic Premium Colors
-                              let posColor =
-                                "text-zinc-500 bg-white/5 border-white/5";
-                              if (isApproved) {
-                                if (position === "1")
-                                  posColor =
-                                    "text-yellow-400 bg-yellow-400/10 border-yellow-400/20 shadow-[0_0_15px_rgba(250,204,21,0.1)]";
-                                else if (position === "2")
-                                  posColor =
-                                    "text-slate-300 bg-slate-300/10 border-slate-300/20 shadow-[0_0_15px_rgba(203,213,225,0.1)]";
-                                else if (position === "3")
-                                  posColor =
-                                    "text-amber-600 bg-amber-600/10 border-amber-600/20 shadow-[0_0_15px_rgba(217,119,6,0.1)]";
-                                else
-                                  posColor =
-                                    "text-indigo-400 bg-indigo-400/10 border-indigo-400/20";
-                              }
+                              let posColor = "text-zinc-500 bg-white/5 border-white/5";
+                              if (position === "1")
+                                posColor = "text-yellow-400 bg-yellow-400/10 border-yellow-400/20 shadow-[0_0_15px_rgba(250,204,21,0.1)]";
+                              else if (position === "2")
+                                posColor = "text-slate-300 bg-slate-300/10 border-slate-300/20 shadow-[0_0_15px_rgba(203,213,225,0.1)]";
+                              else if (position === "3")
+                                posColor = "text-amber-600 bg-amber-600/10 border-amber-600/20 shadow-[0_0_15px_rgba(217,119,6,0.1)]";
+                              else
+                                posColor = "text-indigo-400 bg-indigo-400/10 border-indigo-400/20";
 
                               return (
                                 <div
                                   key={rIdx}
-                                  className={`flex items-center justify-between p-3 rounded-xl border ${isApproved ? "bg-black/60 border-white/10 hover:border-white/20 hover:bg-white/[0.04]" : "bg-black/20 border-white/5 opacity-60"} transition-all duration-300`}
+                                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 rounded-2xl border bg-black/60 border-white/10 hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300 gap-4"
                                 >
-                                  <div className="flex items-center gap-3 overflow-hidden">
+                                  <div className="flex items-center gap-4 overflow-hidden">
                                     <div
-                                      className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${posColor} font-black text-xs`}
+                                      className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center shrink-0 border ${posColor} font-black text-lg md:text-xl`}
                                     >
                                       {position &&
                                       position !== "undefined" &&
                                       position !== "null" ? (
                                         `#${position}`
                                       ) : (
-                                        <Medal className="w-4 h-4" />
+                                        <Medal className="w-6 h-6" />
                                       )}
                                     </div>
                                     <div className="flex flex-col truncate pr-2">
-                                      <span className="text-xs md:text-sm font-bold text-zinc-200 truncate">
+                                      <span className="text-sm md:text-lg font-bold text-zinc-100 truncate">
                                         {evName || "Unknown Event"}
                                       </span>
-                                      {!isApproved && (
-                                        <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest mt-0.5">
-                                          Pending Verification
+                                      <div className="flex items-center gap-2 mt-1.5">
+                                        <span className="text-[9px] md:text-[10px] font-mono text-zinc-400 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                                          Grade {win.grade && win.grade !== 'None' ? win.grade : 'N/A'}
                                         </span>
-                                      )}
+                                        <span className="text-[9px] md:text-[10px] font-mono text-emerald-500/70 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                          Verified
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
+                                  
                                   {win.points ? (
-                                    <div className="flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 shrink-0 ml-2">
+                                    <div className="flex items-center justify-end gap-2 bg-white/5 px-4 py-2 md:py-3 rounded-xl border border-white/10 shrink-0">
                                       <Zap
-                                        className={`w-3 h-3 ${isApproved ? "text-yellow-500" : "text-zinc-500"}`}
+                                        className="w-4 h-4 text-yellow-500"
                                       />
-                                      <span className="text-xs font-black text-white">
-                                        {win.points}
+                                      <span className="text-base md:text-xl font-black text-white">
+                                        {win.points} <span className="text-[10px] text-zinc-500">PTS</span>
                                       </span>
                                     </div>
                                   ) : null}
