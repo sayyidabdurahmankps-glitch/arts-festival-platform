@@ -19,7 +19,7 @@ export default function LiveBentoGallery() {
   const [loading, setLoading] = useState(true);
   const [activeCat, setActiveCat] = useState("All");
 
-  // ⚡ BOOT & REALTIME SYNC: Fetch Live Media and listen for changes
+  // ⚡ BOOT & REALTIME SYNC
   useEffect(() => {
     const fetchVault = async () => {
       const { data, error } = await supabase
@@ -32,29 +32,23 @@ export default function LiveBentoGallery() {
       setLoading(false);
     };
 
-    // Initial fetch
     fetchVault();
 
-    // ⚡ REALTIME WEBSOCKET SUBSCRIPTION
     const channel = supabase
       .channel('public-gallery-sync')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'gallery' },
-        () => {
-          // Whenever an insert, update (position change), or delete happens, instantly re-fetch!
-          fetchVault();
-        }
+        () => fetchVault()
       )
       .subscribe();
 
-    // Cleanup subscription on unmount
     return () => {
       supabase.removeChannel(channel);
     };
   }, []);
 
-  // ⚡ DYNAMIC CATEGORIES: Extract and CLEAN available categories
+  // ⚡ DYNAMIC CATEGORIES
   const availableCategories = useMemo(() => {
     const validCats = assets
       .map((a) => (a.category ? a.category.trim() : null))
@@ -64,7 +58,6 @@ export default function LiveBentoGallery() {
     return ["All", ...Array.from(cats)].sort();
   }, [assets]);
 
-  // ⚡ FILTER ENGINE: Safely match trimmed categories
   const filteredItems = useMemo(() => {
     return assets.filter((item) => {
       if (activeCat === "All") return true;
@@ -75,69 +68,84 @@ export default function LiveBentoGallery() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-[#000000] flex flex-col items-center justify-center gap-6">
-        <div className="relative">
-          <div className="absolute inset-0 bg-cyan-500 blur-xl opacity-20 animate-pulse" />
-          <Loader2 className="w-12 h-12 animate-spin text-cyan-400 relative z-10" />
-        </div>
+      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center gap-6">
+        <Loader2 className="w-10 h-10 animate-spin text-cyan-500" />
         <p className="text-[10px] font-mono tracking-[0.4em] uppercase text-zinc-500">
-          Syncing Vault
+          Loading Media
         </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white font-sans selection:bg-cyan-500 selection:text-black relative pb-32">
+    <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-cyan-500 selection:text-black relative pb-24">
       
-      {/* 1. APP-STYLE HEADER */}
-      <header className="px-4 md:px-10 pt-28 md:pt-36 pb-6 flex items-end justify-between border-b border-white/5 relative z-10">
-        <div>
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase leading-none drop-shadow-lg">
-            Media<span className="text-cyan-400 not-italic">.</span>Vault
-          </h1>
-          <p className="text-[9px] md:text-[10px] font-mono tracking-[0.3em] uppercase opacity-40 mt-4 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse" />
-            {filteredItems.length} Records Found
-          </p>
-        </div>
-      </header>
-
-      {/* 2. TRUE MOBILE BENTO GRID */}
-      <main className="p-2 md:p-10 pt-4 md:pt-10 relative z-10">
+      {/* 2. EXACT SCREENSHOT BENTO GRID */}
+      <main className="p-3 md:p-6 lg:p-10 pt-6 relative z-10 max-w-7xl mx-auto">
         {filteredItems.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 grid-flow-row-dense gap-2 md:gap-4 auto-rows-[180px] md:auto-rows-[280px]">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
             {filteredItems.map((item, index) => {
-              const isLarge = index % 4 === 0 || index % 7 === 0;
-              const spanClass = isLarge 
-                ? "col-span-2 row-span-2 md:col-span-2" 
-                : "col-span-1 row-span-1";
+              // Mathematical pattern to recreate the screenshot's layout:
+              // Index 0: Full width. Index 1 & 2: Half width. (Repeats)
+              const isFeatured = index % 3 === 0;
 
+              if (isFeatured) {
+                // 🟢 FEATURED FULL-WIDTH CARD
+                return (
+                  <div
+                    key={item.id}
+                    className="col-span-2 md:col-span-2 lg:col-span-2 flex flex-col bg-black border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg animate-in fade-in zoom-in-95 duration-500"
+                  >
+                    <div className="w-full aspect-video md:aspect-[21/9] relative bg-zinc-900">
+                      <img
+                        src={item.image_url}
+                        className="w-full h-full object-cover"
+                        alt={item.title || "Gallery Asset"}
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-5 md:p-6 bg-black flex flex-col justify-center">
+                      <h3 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter leading-none text-white mb-2 line-clamp-2">
+                        {item.title || "Untitled"}
+                      </h3>
+                      <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+                        <Camera className="w-3.5 h-3.5 text-cyan-500" /> {item.photographer || "Studio Hub"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // 🟢 STANDARD HALF-WIDTH OVERLAY CARD
               return (
                 <div
                   key={item.id}
-                  className={`${spanClass} group relative rounded-xl md:rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/5 cursor-pointer animate-in fade-in duration-500`}
+                  className="col-span-1 relative aspect-[3/4] md:aspect-square bg-black border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-lg animate-in fade-in zoom-in-95 duration-500 group"
                 >
                   <img
                     src={item.image_url}
-                    className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110 lg:opacity-70 lg:group-hover:opacity-100"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     alt={item.title || "Gallery Asset"}
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent lg:opacity-80 lg:group-hover:opacity-100 transition-opacity duration-500" />
                   
-                  <div className="absolute top-3 right-3 md:top-5 md:right-5">
-                    <span className="px-2.5 py-1 bg-black/50 backdrop-blur-xl border border-white/10 rounded-md text-[8px] md:text-[10px] font-black tracking-widest uppercase text-cyan-400">
-                      {item.category || "UNCATEGORIZED"}
+                  {/* Bottom Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+                  
+                  {/* Top Right Category Pill */}
+                  <div className="absolute top-3 right-3 md:top-4 md:right-4 z-10">
+                    <span className="px-2.5 py-1 bg-cyan-600/80 backdrop-blur-md rounded-full text-[8px] md:text-[9px] font-black tracking-widest uppercase text-white shadow-sm">
+                      {item.category || "MEDIA"}
                     </span>
                   </div>
 
-                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 lg:translate-y-2 lg:group-hover:translate-y-0 transition-transform duration-500">
-                    <h3 className={`font-extrabold uppercase italic tracking-tighter leading-none text-white drop-shadow-xl ${isLarge ? 'text-2xl md:text-4xl' : 'text-lg md:text-2xl'}`}>
+                  {/* Bottom Text Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 md:p-5 z-10">
+                    <h3 className="text-[1.1rem] md:text-2xl font-black italic uppercase tracking-tighter leading-[1.1] text-white drop-shadow-md mb-1.5 line-clamp-3">
                       {item.title || "Untitled"}
                     </h3>
-                    <p className="text-[9px] md:text-[10px] font-mono text-zinc-400 uppercase tracking-widest mt-1.5 md:mt-2 flex items-center gap-1.5">
-                      <Camera className="w-3 h-3 text-cyan-500" /> {item.photographer || "Studio Hub"}
+                    <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-zinc-300 flex items-center gap-1.5">
+                      <Camera className="w-3 h-3 text-cyan-400" /> {item.photographer || "Studio Hub"}
                     </p>
                   </div>
                 </div>
@@ -155,16 +163,16 @@ export default function LiveBentoGallery() {
       </main>
 
       {/* 3. FLOATING BOTTOM FILTER DOCK */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92vw] max-w-2xl bg-black/70 backdrop-blur-2xl border border-white/10 rounded-2xl p-2 shadow-[0_20px_40px_rgba(0,0,0,0.8)]">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar snap-x touch-pan-x items-center [&::-webkit-scrollbar]:hidden">
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-2xl bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-1.5 shadow-[0_20px_40px_rgba(0,0,0,0.9)]">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar snap-x touch-pan-x items-center [&::-webkit-scrollbar]:hidden">
           {availableCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCat(cat)}
-              className={`snap-center whitespace-nowrap text-xs md:text-sm font-bold uppercase tracking-wider px-5 py-3 rounded-xl transition-all duration-300 active:scale-95 ${
+              className={`snap-center whitespace-nowrap text-[10px] md:text-xs font-black uppercase tracking-widest px-5 py-3 rounded-xl transition-all duration-300 active:scale-95 ${
                 activeCat === cat
-                  ? "bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                  : "bg-transparent text-zinc-400 hover:bg-white/5 hover:text-white"
+                  ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                  : "bg-transparent text-zinc-400 hover:bg-white/10 hover:text-white"
               }`}
             >
               {cat}
