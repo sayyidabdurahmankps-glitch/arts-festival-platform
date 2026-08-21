@@ -4,7 +4,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Trash2, ShieldAlert, Edit2, X, Save, Hash, GripVertical, Compass, Camera } from 'lucide-react';
 
-// --- TYPES ---
 type Asset = { 
   id: string; 
   image_url: string; 
@@ -20,33 +19,29 @@ export default function MediaAssetManager() {
   const [loading, setLoading] = useState(true);
   const [activeCat, setActiveCat] = useState("All");
   
-  // Action States
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ title: '', category: '', position: 0 });
   
-  // Drag & Drop States
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isSyncingBackground, setIsSyncingBackground] = useState(false);
 
-  // ⚡ BOOT & FETCH
   useEffect(() => {
     fetchAssets();
   }, []);
 
   const fetchAssets = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('gallery')
       .select('*')
       .order('position', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });
       
-    if (data) setAssets(data as Asset[]);
+    if (!error && data) setAssets(data as Asset[]);
     setLoading(false);
   };
 
-  // ⚡ DYNAMIC CATEGORIES
   const availableCategories = useMemo(() => {
     const validCats = assets
       .map((a) => (a.category ? a.category.trim() : null))
@@ -64,20 +59,17 @@ export default function MediaAssetManager() {
   }, [assets, activeCat]);
 
   // ============================================================================
-  // ⚡ SUPERCHARGED OPTIMISTIC UI ENGINE (FOR WEAK INTERNET)
+  // ⚡ BULLETPROOF & INSTANT DELETE ENGINE
   // ============================================================================
-
-  // 1. OPTIMISTIC DELETE
   const deleteAsset = async (e: React.MouseEvent, assetToDelete: Asset) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault(); 
+    e.stopPropagation();
     
     if (!confirm(`Permanently delete "${assetToDelete.title || 'this image'}"?`)) return;
     
-    // 🟢 INSTANT UI UPDATE (Don't wait for the internet)
+    // 1. Optimistically update local UI immediately
     const previousAssets = [...assets];
     const remainingAssets = assets.filter(a => a.id !== assetToDelete.id);
-    
-    // Auto-collapse positions to close the gap immediately
     const reorderedAssets = remainingAssets.map((asset, index) => ({
       ...asset, position: index + 1
     }));
@@ -86,33 +78,39 @@ export default function MediaAssetManager() {
     setIsSyncingBackground(true);
 
     try {
-      // 🟡 BACKGROUND DB SYNC (Fire and Forget)
-      const { error: dbError } = await supabase.from('gallery').delete().eq('id', assetToDelete.id);
-      if (dbError) throw dbError;
-      
-      // Cleanup storage silently
+      // 2. Delete storage file if path exists (non-blocking)
       if (assetToDelete.file_path) {
-        supabase.storage.from('media-gallery').remove([assetToDelete.file_path]); 
+        supabase.storage.from('media-gallery').remove([assetToDelete.file_path]).catch(() => {});
       }
 
-      // Sync collapsed positions in the background
+      // 3. Strict Database Deletion targeting primary key ID
+      const { error: dbError } = await supabase
+        .from('gallery')
+        .delete()
+        .eq('id', assetToDelete.id);
+
+      if (dbError) throw dbError;
+
+      // 4. Background position re-indexing sync
       await Promise.all(
-        reorderedAssets.map(asset => supabase.from('gallery').update({ position: asset.position }).eq('id', asset.id))
+        reorderedAssets.map(asset => 
+          supabase.from('gallery').update({ position: asset.position }).eq('id', asset.id)
+        )
       );
+
     } catch (error: any) {
-      // 🔴 ROLLBACK IF INTERNET FAILS
-      setAssets(previousAssets); 
-      alert("Network dropped. Deletion failed: " + error.message);
+      console.error("Deletion error:", error);
+      setAssets(previousAssets); // Rollback if DB fails
+      alert("Deletion failed: " + (error.message || "Unknown error"));
     } finally {
       setIsSyncingBackground(false);
     }
   };
 
-  // 2. OPTIMISTIC EDIT
   const saveUpdates = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault(); 
+    e.stopPropagation();
     
-    // 🟢 INSTANT UI UPDATE
     const previousAssets = [...assets];
     setAssets(prev => {
       const updated = prev.map(a => a.id === id ? { ...a, ...editForm, position: Number(editForm.position) } : a);
@@ -122,7 +120,6 @@ export default function MediaAssetManager() {
     setIsSyncingBackground(true);
 
     try {
-      // 🟡 BACKGROUND DB SYNC
       const { error } = await supabase.from('gallery').update({
         title: editForm.title,
         category: editForm.category,
@@ -131,17 +128,14 @@ export default function MediaAssetManager() {
 
       if (error) throw error;
     } catch (error: any) {
-      // 🔴 ROLLBACK
       setAssets(previousAssets);
-      alert("Network dropped. Update failed: " + error.message);
+      alert("Update failed: " + error.message);
     } finally {
       setIsSyncingBackground(false);
     }
   };
 
-  // 3. OPTIMISTIC DRAG & DROP
   const performReorder = async (sourceId: string, targetId: string) => {
-    // 🟢 INSTANT UI UPDATE
     const oldAssets = [...assets];
     const sourceIndex = oldAssets.findIndex(a => a.id === sourceId);
     const targetIndex = oldAssets.findIndex(a => a.id === targetId);
@@ -158,20 +152,17 @@ export default function MediaAssetManager() {
     setIsSyncingBackground(true);
 
     try {
-      // 🟡 BACKGROUND DB SYNC
       await Promise.all(
         updatedAssets.map(asset => supabase.from('gallery').update({ position: asset.position }).eq('id', asset.id))
       );
     } catch (err) {
-      // 🔴 ROLLBACK
       setAssets(oldAssets); 
-      alert("Network dropped. Grid sync failed.");
+      alert("Grid sync failed.");
     } finally {
       setIsSyncingBackground(false);
     }
   };
 
-  // --- HTML5 DESKTOP DRAG HANDLERS ---
   const isDragEnabled = activeCat === "All" && editingId === null;
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -203,7 +194,6 @@ export default function MediaAssetManager() {
     performReorder(sourceId, targetId);
   };
 
-  // --- MOBILE TOUCH DRAG HANDLERS ---
   const handleTouchStart = (e: React.TouchEvent, id: string) => {
     if (!isDragEnabled) return;
     setDraggedId(id);
@@ -225,13 +215,11 @@ export default function MediaAssetManager() {
     setDragOverId(null);
   };
 
-  // --- UI TRIGGERS ---
   const startEditing = (e: React.MouseEvent, asset: Asset) => {
     e.preventDefault(); e.stopPropagation();
     setEditingId(asset.id);
     setEditForm({ title: asset.title || '', category: asset.category || '', position: asset.position || 0 });
   };
-
 
   if (loading) {
     return (
@@ -245,7 +233,6 @@ export default function MediaAssetManager() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-cyan-500 selection:text-black relative pb-24 overflow-x-hidden">
       
-      {/* HEADER */}
       <header className="px-4 md:px-10 pt-28 md:pt-36 pb-6 flex items-end justify-between border-b border-white/5 relative z-10">
         <div>
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-black italic tracking-tighter uppercase leading-none drop-shadow-lg">
@@ -264,26 +251,21 @@ export default function MediaAssetManager() {
         )}
       </header>
 
-      {/* WARNING BANNER */}
       {activeCat !== "All" && (
         <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center justify-center gap-2 text-amber-500 text-xs font-bold tracking-widest uppercase">
           <ShieldAlert className="w-4 h-4" /> Reordering Disabled While Filtering
         </div>
       )}
 
-      {/* EXACT BENTO GRID LAYOUT */}
       <main className="p-3 md:p-6 lg:p-10 pt-6 relative z-10 max-w-7xl mx-auto">
         {filteredItems.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
             {filteredItems.map((asset, index) => {
-              
-              // mathematical pattern for exact gallery matching
               const isFeatured = index % 3 === 0;
               const isEditing = editingId === asset.id;
               const isDragging = draggedId === asset.id;
               const isDragOver = dragOverId === asset.id;
 
-              // Shared Wrapper Styles
               const baseClasses = `relative rounded-2xl md:rounded-3xl overflow-hidden shadow-lg transition-all duration-300 group
                 ${isDragging ? 'opacity-30 scale-95' : ''} 
                 ${isDragOver ? 'border-2 border-cyan-500 shadow-[0_0_40px_rgba(6,182,212,0.5)] scale-[1.02] bg-cyan-500/10 z-50' : 'border border-white/10'}
@@ -302,9 +284,7 @@ export default function MediaAssetManager() {
                   className={baseClasses}
                 >
                   
-                  {/* --- TOP UI: POSITION, CATEGORY, ACTIONS --- */}
                   <div className="absolute top-2 right-2 md:top-4 md:right-4 z-50 flex items-center gap-2">
-                    {/* Position & Category Pill */}
                     <div className="flex items-center bg-cyan-600/90 backdrop-blur-md rounded-full shadow-sm pr-2 overflow-hidden pointer-events-none">
                       <span className="bg-black/50 text-white font-black text-[9px] px-2 py-1.5 flex items-center gap-1">
                         <Hash className="w-3 h-3 text-cyan-300" /> {asset.position || 0}
@@ -314,7 +294,6 @@ export default function MediaAssetManager() {
                       </span>
                     </div>
 
-                    {/* Action Buttons */}
                     {!isEditing && (
                       <div className="flex gap-1.5 bg-black/50 backdrop-blur-xl p-1 rounded-xl border border-white/10 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <button onClick={(e) => startEditing(e, asset)} className="w-8 h-8 bg-zinc-800/80 hover:bg-cyan-500 text-white rounded-lg flex items-center justify-center transition-all cursor-pointer">
@@ -324,7 +303,6 @@ export default function MediaAssetManager() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                         
-                        {/* Drag Handle (Desktop + Mobile) */}
                         {isDragEnabled && (
                           <div 
                             className="w-8 h-8 bg-zinc-800/80 text-cyan-400 rounded-lg flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
@@ -339,7 +317,6 @@ export default function MediaAssetManager() {
                     )}
                   </div>
 
-                  {/* --- FEATURED LAYOUT (Top Image, Bottom Text) --- */}
                   {isFeatured ? (
                     <>
                       <div className="w-full aspect-video md:aspect-[21/9] relative bg-zinc-900 shrink-0 pointer-events-none">
@@ -347,7 +324,6 @@ export default function MediaAssetManager() {
                       </div>
                       <div className="p-5 md:p-6 bg-black flex flex-col justify-center flex-1">
                         {isEditing ? (
-                          // INLINE EDIT FORM (FEATURED)
                           <div className="flex flex-col md:flex-row gap-3 w-full animate-in fade-in">
                             <input 
                               type="text" value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
@@ -371,7 +347,6 @@ export default function MediaAssetManager() {
                             </div>
                           </div>
                         ) : (
-                          // NORMAL DISPLAY (FEATURED)
                           <>
                             <h3 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter leading-none text-white mb-2 line-clamp-2">
                               {asset.title || "Untitled"}
@@ -384,14 +359,11 @@ export default function MediaAssetManager() {
                       </div>
                     </>
                   ) : (
-                    
-                  /* --- STANDARD HALF-WIDTH LAYOUT (Full Image, Overlay Text) --- */
                     <>
                       <img src={asset.image_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none" alt="thumbnail" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90 pointer-events-none" />
                       
                       {isEditing ? (
-                         // OVERLAY EDIT FORM (STANDARD)
                          <div className="absolute inset-0 bg-black/95 z-40 p-4 flex flex-col justify-center animate-in fade-in">
                             <label className="text-[8px] uppercase text-cyan-500 font-bold mb-1">Title</label>
                             <input 
@@ -414,7 +386,6 @@ export default function MediaAssetManager() {
                             </div>
                          </div>
                       ) : (
-                        // NORMAL DISPLAY (STANDARD)
                         <div className="absolute bottom-0 left-0 right-0 p-3 md:p-5 z-10 pointer-events-none">
                           <h3 className="text-[1.1rem] md:text-2xl font-black italic uppercase tracking-tighter leading-[1.1] text-white drop-shadow-md mb-1.5 line-clamp-3">
                             {asset.title || "Untitled"}
@@ -440,7 +411,6 @@ export default function MediaAssetManager() {
         )}
       </main>
 
-      {/* FLOATING BOTTOM FILTER DOCK */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-2xl bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-1.5 shadow-[0_20px_40px_rgba(0,0,0,0.9)]">
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar snap-x touch-pan-x items-center [&::-webkit-scrollbar]:hidden">
           {availableCategories.map((cat) => (

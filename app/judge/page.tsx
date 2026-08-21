@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   LogOut, Gavel, Check, Loader2, Search, RotateCcw, Clock, 
-  Trophy, ShieldAlert, Hash, X, AlertTriangle, Lock, UserCheck, Filter, RefreshCcw, Database, Zap, Plus, Trash2
+  Trophy, ShieldAlert, Hash, X, AlertTriangle, Lock, UserCheck, Filter, RefreshCcw, Database, Zap
 } from "lucide-react";
 
 // --- TYPES ---
@@ -12,24 +12,21 @@ type Participant = { id: string; name: string; category: string; participant_id:
 type EventData = { id: string; name: string; category: string; event_code: string; event_mode: string; event_type: string; mark_tier: string; };
 type PointRule = { category: string; event_mode: string; event_type: string; mark_tier: string; rule_type: string; award: string; points: number; };
 
-// ⚡ UPDATED: Flexible Winner Entry
 type WinnerEntry = {
-  local_id: string;
   result_id?: string;
   position: string;
+  label: string;
   studentInput: string;
   selectedStudent: Participant | null;
   grade: string;
+  required: boolean;
 };
 
-// ⚡ HELPER: Generate a fresh row
-const generateEmptyRow = (pos = "1"): WinnerEntry => ({
-  local_id: Math.random().toString(36).substring(7),
-  position: pos,
-  studentInput: "",
-  selectedStudent: null,
-  grade: ""
-});
+const initialEntriesState: WinnerEntry[] = [
+  { position: "1", label: "1st Place Student ID", studentInput: "", selectedStudent: null, grade: "", required: true },
+  { position: "2", label: "2nd Place Student ID", studentInput: "", selectedStudent: null, grade: "", required: false },
+  { position: "3", label: "3rd Place ID (Optional)", studentInput: "", selectedStudent: null, grade: "", required: false },
+];
 
 export default function BatchDeclarationTerminal() {
   const [liveEvents, setLiveEvents] = useState<EventData[]>([]);
@@ -54,11 +51,7 @@ export default function BatchDeclarationTerminal() {
   const [eventInput, setEventInput] = useState("");
   const [activeEvent, setActiveEvent] = useState<EventData | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  
-  // ⚡ DYNAMIC ENTRIES STATE
-  const [entries, setEntries] = useState<WinnerEntry[]>([]);
-
-  const resetEntries = () => setEntries([generateEmptyRow("1"), generateEmptyRow("2"), generateEmptyRow("3")]);
+  const [entries, setEntries] = useState<WinnerEntry[]>(initialEntriesState);
 
   // ⚡ BOOT & WSS SYNC
   useEffect(() => {
@@ -81,7 +74,6 @@ export default function BatchDeclarationTerminal() {
       if (eventsRes.data) setLiveEvents(eventsRes.data);
       if (ledgerRes.data) setLedger(ledgerRes.data);
 
-      resetEntries();
       setLoading((prev) => ({ ...prev, boot: false }));
 
       const channel = supabase.channel("judge-ledger")
@@ -118,19 +110,22 @@ export default function BatchDeclarationTerminal() {
     
     if (existingScores.length > 0) {
       setIsEditMode(true);
-      // Create a row for EVERY existing score (perfect for ties)
-      const populatedEntries = existingScores.map(score => ({
-        local_id: Math.random().toString(36).substring(7),
-        result_id: score.id,
-        position: score.position.toString(),
-        studentInput: "",
-        selectedStudent: score.participants,
-        grade: score.grade || "None"
-      }));
+      const populatedEntries = initialEntriesState.map(defaultEntry => {
+        const matchingScore = existingScores.find(s => s.position.toString() === defaultEntry.position);
+        if (matchingScore) {
+          return {
+            ...defaultEntry,
+            result_id: matchingScore.id,
+            selectedStudent: matchingScore.participants,
+            grade: matchingScore.grade || "None"
+          };
+        }
+        return defaultEntry;
+      });
       setEntries(populatedEntries);
     } else {
       setIsEditMode(false);
-      resetEntries();
+      setEntries(initialEntriesState);
     }
     setLoading(prev => ({ ...prev, recallingEvent: false }));
   };
@@ -205,7 +200,6 @@ export default function BatchDeclarationTerminal() {
     }
   };
 
-  // ⚡ DYNAMIC ROW MANAGERS
   const updateEntry = (index: number, updates: Partial<WinnerEntry>) => {
     setEntries((prev) => {
       const newEntries = [...prev];
@@ -213,9 +207,6 @@ export default function BatchDeclarationTerminal() {
       return newEntries;
     });
   };
-
-  const addEntry = () => setEntries(prev => [...prev, generateEmptyRow("1")]);
-  const removeEntry = (indexToRemove: number) => setEntries(prev => prev.filter((_, i) => i !== indexToRemove));
 
   // ⚡ BATCH SUBMISSION (Inserts & Updates)
   const declareWinners = async () => {
@@ -225,21 +216,18 @@ export default function BatchDeclarationTerminal() {
       return alert("SECURITY LOCK: One or more scores for this event have already been verified by the Admin. You cannot edit them from this terminal.");
     }
 
-    // Only process rows where a student has actually been selected
-    const filledEntries = entries.filter((e) => e.selectedStudent);
-    
-    if (filledEntries.length === 0) {
-      return alert("No winners selected. Please declare at least one student.");
-    }
-
+    const filledEntries = entries.filter((e) => e.selectedStudent || e.grade);
     const firstPlace = filledEntries.find((e) => e.position === "1");
-    if (!firstPlace) {
-      return alert("1st Place is strictly required. Please select a student for 1st place.");
+    if (!firstPlace || !firstPlace.selectedStudent || !firstPlace.grade) {
+      return alert("1st Place is strictly required. Please select a student and a grade.");
     }
 
-    const invalidEntry = filledEntries.find((e) => !e.grade);
+    // ⚡ FIX: Now correctly accepts "None" (No Grade) as a valid selection!
+    const invalidEntry = filledEntries.find(
+      (e) => (e.selectedStudent && !e.grade) || (!e.selectedStudent && e.grade !== "")
+    );
     if (invalidEntry) {
-      return alert(`Incomplete data. Please select a grade (or "No Grade") for all selected students in Position #${invalidEntry.position}.`);
+      return alert(`Incomplete data for ${invalidEntry.label}. Please make sure to assign a grade (or select "No Grade") if a student is entered.`);
     }
 
     const categoryMismatch = filledEntries.some(
@@ -304,7 +292,7 @@ export default function BatchDeclarationTerminal() {
       const { data } = await supabase.from("results").select(`id, event_id, points, position, grade, status, created_at, participants ( id, name, category, participant_id, teams(name) ), events ( id, event_code, name, category, mark_tier )`).eq("judge_email", judgeEmail).order("created_at", { ascending: false }).limit(50);
       if (data) setLedger(data);
 
-      resetEntries();
+      setEntries(initialEntriesState);
       setActiveEvent(null);
       setEventInput("");
       setIsEditMode(false);
@@ -371,7 +359,7 @@ export default function BatchDeclarationTerminal() {
               <input
                 type="text" placeholder="Scan Event ID (e.g. EW-101)"
                 value={activeEvent ? `${activeEvent.event_code}: ${activeEvent.name}` : eventInput}
-                onChange={(e) => { setEventInput(e.target.value); setActiveEvent(null); resetEntries(); setIsEditMode(false); }}
+                onChange={(e) => { setEventInput(e.target.value); setActiveEvent(null); setEntries(initialEntriesState); setIsEditMode(false); }}
                 onKeyDown={handleEventKeyDown} disabled={loading.recallingEvent}
                 className="flex-1 w-full bg-transparent border-none outline-none text-white font-black text-xl md:text-2xl py-3 pl-3 pr-24 uppercase placeholder-zinc-700 truncate tracking-wide disabled:opacity-50"
               />
@@ -385,7 +373,7 @@ export default function BatchDeclarationTerminal() {
               )}
 
               {activeEvent && (
-                <button onClick={() => { setActiveEvent(null); setEventInput(""); resetEntries(); setIsEditMode(false); }} className="p-3 text-zinc-500 hover:text-red-500 transition-colors rounded-xl hover:bg-white/5">
+                <button onClick={() => { setActiveEvent(null); setEventInput(""); setEntries(initialEntriesState); setIsEditMode(false); }} className="p-3 text-zinc-500 hover:text-red-500 transition-colors rounded-xl hover:bg-white/5">
                   <X className="w-5 h-5" />
                 </button>
               )}
@@ -470,34 +458,18 @@ export default function BatchDeclarationTerminal() {
             {entries.map((entry, index) => {
               const activeSuggestions = activeInputIndex === index ? suggestions : [];
               const showNoMatchWarning = activeInputIndex === index && entry.studentInput.length >= 2 && activeSuggestions.length === 0 && !entry.selectedStudent && !isSearchingStudent;
-              
-              const posNum = parseInt(entry.position);
-              const trophyColor = posNum === 1 ? "text-yellow-500" : posNum === 2 ? "text-zinc-300" : "text-amber-700";
 
               return (
-                <div key={entry.local_id} style={{ zIndex: 50 - index }} className={`bg-[#0a0a0a] border ${!entry.selectedStudent && entry.grade ? "border-amber-500/30" : entry.result_id ? "border-indigo-500/30" : "border-white/5"} rounded-[2rem] p-6 md:p-8 relative transition-all shadow-xl`}>
+                <div key={index} style={{ zIndex: 50 - index }} className={`bg-[#0a0a0a] border ${entry.required && !entry.selectedStudent ? "border-amber-500/30" : entry.result_id ? "border-indigo-500/30" : "border-white/5"} rounded-[2rem] p-6 md:p-8 relative transition-all shadow-xl`}>
                   
-                  {/* POSITION SELECTOR & HEADER */}
                   <div className="flex justify-between items-center mb-4">
-                    <div className="flex items-center gap-3">
-                      <Trophy className={`w-5 h-5 ${trophyColor}`} />
-                      <select 
-                        value={entry.position}
-                        onChange={(e) => updateEntry(index, { position: e.target.value })}
-                        className="bg-black border border-white/10 text-white text-sm font-black uppercase tracking-widest px-3 py-1.5 rounded-lg outline-none focus:border-emerald-500 transition-colors appearance-none cursor-pointer"
-                      >
-                        {activeEventRules.positions.length > 0 
-                          ? activeEventRules.positions.map(p => <option key={p.award} value={p.award}>Position #{p.award}</option>)
-                          : <><option value="1">Position #1</option><option value="2">Position #2</option><option value="3">Position #3</option></>
-                        }
-                      </select>
-                    </div>
-
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                      <Trophy className={`w-4 h-4 ${index === 0 ? "text-yellow-500" : index === 1 ? "text-zinc-300" : "text-amber-700"}`} />
+                      <span className={index === 0 ? "text-emerald-500" : ""}>{entry.label}</span>
+                    </p>
                     <div className="flex items-center gap-2">
                       {entry.result_id && <span className="text-[9px] font-mono text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-1 rounded flex items-center gap-1"><Check className="w-3 h-3"/> Loaded</span>}
-                      <button onClick={() => removeEntry(index)} className="p-1.5 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20" title="Remove this row">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!entry.required && !entry.selectedStudent && <span className="text-[9px] font-mono text-zinc-600 uppercase border border-white/5 px-2 py-1 rounded">Optional</span>}
                     </div>
                   </div>
 
@@ -584,7 +556,7 @@ export default function BatchDeclarationTerminal() {
                         </span>
                       </div>
 
-                      {/* Live Points Predictor */}
+                      {/* ⚡ NEW: Live Points Predictor */}
                       {(() => {
                         const gPts = activeEventRules.grades.find((r) => r.award.toUpperCase() === entry.grade.toUpperCase())?.points || 0;
                         const pPts = activeEventRules.positions.find((r) => r.award === entry.position)?.points || 0;
@@ -607,22 +579,14 @@ export default function BatchDeclarationTerminal() {
                 </div>
               );
             })}
-
-            {/* ⚡ ADD ANOTHER WINNER BUTTON */}
-            <button 
-              onClick={addEntry} 
-              className="w-full py-4 border border-dashed border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/5 rounded-[2rem] text-zinc-500 hover:text-emerald-400 font-black uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-all shadow-lg"
-            >
-              <Plus className="w-5 h-5" /> Add Another Winner
-            </button>
           </div>
 
-          <button onClick={declareWinners} disabled={loading.submit || !activeEvent} className={`w-full text-white py-6 rounded-2xl font-black uppercase tracking-[0.3em] text-sm md:text-base transition-all disabled:opacity-20 flex justify-center items-center gap-3 border mt-6 ${isEditMode ? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-400/20 shadow-[0_0_30px_rgba(79,70,229,0.3)]' : 'bg-red-600 hover:bg-red-500 border-red-400/20 shadow-[0_0_30px_rgba(220,38,38,0.3)]'}`}>
+          <button onClick={declareWinners} disabled={loading.submit || !activeEvent} className={`w-full text-white py-6 rounded-2xl font-black uppercase tracking-[0.3em] text-sm md:text-base transition-all disabled:opacity-20 flex justify-center items-center gap-3 border ${isEditMode ? 'bg-indigo-600 hover:bg-indigo-500 border-indigo-400/20 shadow-[0_0_30px_rgba(79,70,229,0.3)]' : 'bg-red-600 hover:bg-red-500 border-red-400/20 shadow-[0_0_30px_rgba(220,38,38,0.3)]'}`}>
             {loading.submit ? <Loader2 className="w-6 h-6 animate-spin" /> : <> {isEditMode ? 'Overwrite & Save Changes' : 'Save & Declare Winners'} <Check className="w-6 h-6" /></>}
           </button>
         </div>
 
-        {/* 🟢 RECENT SUBMISSIONS LEDGER */}
+        {/* 🟢 RECENT SUBMISSIONS LEDGER (Event Cards) */}
         <div className="mt-20 border-t border-white/5 pt-10 relative z-0">
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
